@@ -1,0 +1,104 @@
+# -*- mode: sh -*-
+
+#alias ls='ls -F -h --color=auto --group-directories-first'
+
+if echo hello|grep --color=auto l >/dev/null 2>&1; then
+    export GREP_OPTIONS='--color=auto' GREP_COLOR='1;35'
+fi
+
+alias -g ...='../..'
+alias -g ....='../../..'
+alias -g .....='../../../..'
+#alias -g D="DISPLAY=:0.0"
+alias -g Sk="*~(*.bz2|*.gz|*.tgz|*.zip|*.z)"
+alias -g NIL="> /dev/null 2>&1"
+#alias -g VM=/var/log/messages
+alias -g M="|/usr/bin/most"
+#alias -g IP=${${$(LC_ALL=C /sbin/ifconfig eth0)[7]}:gs/addr://}
+alias -g PHONEMAC=00:1D:98:56:4A:7A
+
+alias -g ND='$(ls -d *(/om[1]))' # newest directory
+alias -g NF='$(ls *(.om[1]))'    # newest file
+
+# * auto extension, just type name of file and it will be handled right
+# ** Web
+alias -s com=$BROWSER
+alias -s net=$BROWSER
+alias -s org=$BROWSER
+alias -s de=$BROWSER
+alias -s at=$BROWSER
+alias -s php=$BROWSER
+alias -s html=$BROWSER
+alias -s htm=$BROWSER
+# ** Unpack
+alias -s bz2=tar -xjvf
+alias -s gz=tar -xzvf
+
+# ** Image
+alias -s gif=feh
+alias -s jpg=feh
+alias -s png=feh
+# ** PDF
+alias -s pdf=xpdf
+
+# ** Media
+alias -s avi=mplayer
+alias -s divx=mplayer
+alias -s mpg=mplayer
+alias -s mpeg=mplayer
+
+# ** Edit
+#alias -s rb=$EDITOR
+alias -s txt=$EDITOR
+alias -s html=$EDITOR
+alias -s gpg=$EDITOR
+
+alias rw-='chmod 600'
+alias rwx='chmod 700'
+alias r--='chmod 644'
+alias r-x='chmod 755'
+
+alias stardate='date "+%y%m.%d/%H%M"'
+
+ruby=/usr/lib/ruby/1.8
+site_ruby=/usr/lib/ruby/site_ruby/1.8
+gems=/usr/lib/ruby/gems/1.8/gems
+S=~/Source
+backbite=~/Source/backbite
+blog=~/Data/blog
+mlinc=/home/tie/p2p/mldonkey/incoming
+pub=/home/ftp/pub/
+inc=~/Data/Inc
+alias rlame='for i in *.wav; lame --preset extreme "$i" "$i.mp3"'
+alias lowercase='for i in [A-Z][A-Z]*(.); do mv "$i" "${i:l}" ;done'
+alias acroread="LANG=de_DE acroread"
+alias btop='ps -eo pcpu,pid -o comm= | sort -k1 -n -r | head -1'
+#alias ls='ls --color=auto'
+alias xm='sudo xm '
+alias qmplayer='mplayer -quiet -really-quiet'
+alias sfm="shell-fm || rm -f ~/Tmp/shell-fm.np && echo \"removed np file\""
+alias update="mpc update && sudo eix-sync"
+alias lsmov="ls ~pub/movies*"
+alias blog="backbite blog"
+alias polis="backbite polis"
+alias vlc="open -a vlc"
+
+# alias jgem="/Users/mit/.jruby/bin/jgem"
+# alias jruby="/Users/mit/.jruby/bin/jruby"
+
+alias cap=/Users/mit/Source/Extern/capistrano/bin/cap
+alias capify=/Users/mit/Source/Extern/capistrano/bin/capify
+alias ncmp=ncmpcpp
+
+if [ -e "/etc/gentoo-release" ]; then
+    alias emerge="sudo emerge"
+    alias layman="sudo layman"
+    alias eupdatedb="sudo eupdatedb"
+    alias dispatch-conf="sudo /usr/sbin/dispatch-conf"
+    alias env-update="sudo /usr/sbin/env-update"
+fi
+
+
+
+#[ -x =fri ] && alias ri='fri'
+

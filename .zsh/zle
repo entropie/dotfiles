@@ -1,0 +1,45 @@
+# -*- mode: sh -*-
+# ZLE settings.  See zshzle(1)
+# by benny?
+
+
+autoload edit-command-line
+zle -N   edit-command-line
+zle -N   paste-xclip
+
+bindkey -e
+
+# bindkey '^xb'   exec_on_xclip
+# bindkey '^x^'   exec_on_xclip
+
+autoload -U edit-command-line && \
+    zle -N edit-command-line && \
+    bindkey '\ee' edit-command-line
+
+
+function mymt-ds-prevdir() { [[ -z $BUFFER ]] && {
+        local STACKSIZE=`dirs -v | tail -1 | sed 's/\t.*//'`
+        [[ $STACKSIZE -eq 0 ]] && return
+        BUFFER='cd -'; zle accept-line
+    } }; zle -N mymt-ds-prevdir; bindkey '^P' mymt-ds-prevdir
+
+function mymt-ds-nextdir() { [[ -z $BUFFER ]] && { 
+        local STACKSIZE=`dirs -v | tail -1 | sed 's/\t.*//'`
+        [[ $STACKSIZE -eq 0 ]] && return
+  # dirs -vl (~ can't be tested against, thus print them in full and don't go to ~
+        while [[ ! -d $(dirs -vl | grep "^$STACKSIZE" | sed 's/.*\t//') ]] do
+        STACKSIZE=$(($STACKSIZE - 1))
+        done
+        BUFFER="cd +$STACKSIZE"; zle accept-line
+    } }; zle -N mymt-ds-nextdir; bindkey '^N' mymt-ds-nextdir
+
+if [[ $TERM != "linux" && $TERM != "dumb" ]]; then
+    function mymt-updir() {
+        [[ -z $BUFFER ]] && { BUFFER='cd ..'; zle accept-line
+        } }; zle -N mymt-updir; bindkey '^^' mymt-updir
+fi
+
+function mymt-homedir() {
+    [[ -z $BUFFER ]] && { BUFFER='cd ~'; zle accept-line
+    } }; zle -N mymt-homedir; bindkey '^@' mymt-homedir
+

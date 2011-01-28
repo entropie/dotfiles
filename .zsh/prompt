@@ -1,0 +1,219 @@
+# -*- mode: sh -*-
+
+function cool_pwd {
+    local COOL_PWD=""
+    local TMP_PWD=$PWD
+    local max_l=16 # good standard value for me. :-)
+    local i=1
+
+    [[ $TMP_PWD == $HOME ]] && COOL_PWD="~"
+    [[ $TMP_PWD[0,${#HOME}] == $HOME ]] && TMP_PWD[0,${#HOME}]="~"
+
+    if [ ${#TMP_PWD} -gt $max_l ]; then
+        pwd_ary=(${(s:/:)TMP_PWD})
+        for dir in ${pwd_ary}; do
+            if [[ $i -ne ${#pwd_ary} ]]; then
+                [[ $dir[0] != "." ]] && dir=$dir[0] || dir=$dir[0,2]
+            else
+                if [[ ${#dir} -gt 6 ]]; then # bigger than ...*2
+                    [[ $(($#dir + $#COOL_PWD)) -gt $max_l ]] && dir=$dir[0,$(($(($max_l - $#COOL_PWD)) - 3))]"..."
+                fi
+            fi
+            COOL_PWD=$COOL_PWD"/"$dir
+            [[ $COOL_PWD[0,2] == "/~" ]] && COOL_PWD[0,2]="~" # pragmatic?
+            i=$(($i + 1))
+        done
+        [[ $#COOL_PWD -gt $(($max_l + 3)) ]] && COOL_PWD="..."$COOL_PWD[$(($(($#COOL_PWD - $max_l)) + 3)),-1]
+    else
+        COOL_PWD=$TMP_PWD
+    fi
+    echo $COOL_PWD
+    return
+}
+
+# check if the current dir is a rcs repo, and if yes make a markerfile to tell me if I need to commit or not. (dump the marker files in a specified dir so it doesn't clutter the fs)
+# known bug: / can not be a repo. But I don't mind. ;-)
+function what_repo {
+    local curdir=$PWD
+    while [[ $curdir != '/' ]] do
+    [[ -d $curdir/.hg ]] && { echo "hg $curdir"; return }
+    [[ -d $curdir/_darcs ]] && { echo "darcs $curdir"; return }
+    [[ -d $curdir/.svn ]] && { echo "svn $curdir"; return }
+    curdir=$curdir:h
+    done
+}
+
+# wc less than version 5 is crap
+function mywc {
+    echo $(wc -l | sed 's/^ *//')
+}
+
+function is_running-p {
+    echo $(ps | grep $1 | mywc); return
+}
+
+# helper stuff for precmd
+function write_repo_status {
+    case $1 in
+        darcs)
+            [[ $(is_running-p $1) -eq 0 ]] && {
+                [[ $(darcs whatsnew 2>/dev/null | mywc) -eq 1 ]] && {
+                    echo 0 >! ~/.repository_status/$1:${2:gs:/:_:} &!
+                } || {
+                    echo 1 >! ~/.repository_status/$1:${2:gs:/:_:} &!
+                }
+            };;
+        hg|svn)
+            [[ $(is_running-p $1) -eq 0 ]] && $1 status 2>/dev/null | mywc >! ~/.repository_status/$1:${2:gs:/:_:} &!;;
+        *)
+    esac
+}
+
+
+RED=$'%{\e[31m%}'
+GR=$'%{\e[32m%}'
+MA=$'%{\e[35m%}'
+YE=$'%{\e[33m%}'
+NC=$'%{\e[0m%}'
+
+zstyle ':vcs_info:*' actionformats \
+    " ${MA}[${GR}%b${YE}|${RED}%a %b %a %r %R %S${MA}]${NC}" \
+    "${MA}(${GR}%s${MA})${NC}"
+
+zstyle ':vcs_info:*' formats \
+    " ${MA}[${RED}%b${MA}]-[${YE}%r${MA}]${NC}" \
+    "${MA}(${GR}%s${MA})%a %r${NC}"
+
+zstyle ':vcs_info:(sv[nk]|bzr):*' branchformat "%b${RED}:${YE}%r"
+
+function precmd {
+    vcs_info
+    PREV_RET_VAL=$?
+
+    if test $PREV_RET_VAL -eq 0
+    then
+        RETCODE=""
+    else
+        RETCODE="${PR_LIGHT_RED}[${PR_RED}${PREV_RET_VAL}${PR_NO_COLOUR}${PR_LIGHT_RED}] "
+    fi    
+
+    local TERMWIDTH
+    (( TERMWIDTH = ${COLUMNS} - 30 ))
+    # Truncate the path if it's too long.
+    PR_PWDLEN=""
+
+    local promptsize=${#${(%):-[%\!][%m:x][x][]}}
+    local pwdsize=${#${(%):-%~}}
+
+    if [[ "$promptsize + $pwdsize" -gt $TERMWIDTH ]]; then
+        ((PR_PWDLEN=$TERMWIDTH - $promptsize))
+    fi
+
+    local tdl=$(tdll v 2>/dev/null | wc -l)
+    RPROMPT='${VCS_INFO_message_0_} ${RETCODE} ${PR_LIGHT_YELLOW}${PR_LIGHT_MAGENTA}[${PR_MAGENTA}%D{%H%M:%S}${PR_NO_COLOUR}${PR_LIGHT_MAGENTA}] ${PR_LIGHT_WHITE}[${PR_NO_COLOUR}${PR_WHITE}%y${PR_NO_COLOUR}${PR_LIGHT_WHITE}] $PR_BLUE${}[$PR_GREEN%n$PR_YELLOW@$PR_GREEN%(!.%S$HOSTNAME:u%s.$HOSTNAME)$PR_LIGHT_GREEN$PR_BLUE${}]${PR_NO_COLOUR}'
+
+    COOL_PWD=$(cool_pwd)
+    unhash -d COOL_PWD &>/dev/null # ugly hack so that COOL_PWD isn't considered a named dir... I don't want to see my dir as ~COOL_PWD.
+  #(That would be a SHOW STOPPER for this well engineered bit of script. I couldn't live with it!)
+
+  # echo # Do I like to have one newline in between the differnent commands?
+
+  # Start with a green cursor, this is needed because of some weirdness in screen/vim/zsh, YMMV
+    [[ $TERM != "linux" ]] && echo -ne "\033]12;Green\007"
+    chooseprompt
+}
+
+preexec() {
+    case $TERM in
+        screen*)
+            local CMD; CMD=$(echo $1)
+            LAST_CMD=$CMD
+            [[ $#CMD -gt 15 ]] && CMD=$CMD[0,12]"..." # cut from the left, the most significant bit (haha, what a pun) is leftish.
+            [[ $CMD[-4,-1] == "...." ]] && CMD=$CMD[0,-2] # four dots make me crazy
+            ;;
+        linux|dumb)
+            ;;
+        *)
+    #print -Pn '\e]0;%(!.[ROOT] | .)%n@%m:%~ | $1\a'
+            ;;
+    esac
+
+  # See if $DISPLAY needs to be fixed.
+    if [[ $STY != "" && $DISPLAY != "$(<~/.display)" ]]; then
+        DISPLAY=$(<~/.display)
+    fi
+}
+
+
+chooseprompt() {
+    WHICH=$1
+    case $WHICH in
+        short*)
+            export PROMPT_MODE=short
+            shortprompt
+            ;;
+        *)
+            export PROMPT_MODE=default
+            setprompt
+            ;;
+    esac
+    
+}
+
+shortprompt() {
+    PROMPT="%n@%m %#"
+}
+
+
+setprompt() {
+  ###
+    setopt prompt_subst
+
+    HOSTNAME=$(echo `hostname` | cut -d. -f1)
+
+  # See if we can use colors.
+    autoload colors zsh/terminfo
+    if [[ "$terminfo[colors]" -ge 8 ]]; then
+        colors
+    fi
+    for color in RED GREEN YELLOW BLUE MAGENTA CYAN WHITE; do
+        eval PR_$color='%{$terminfo[bold]$fg[${(L)color}]%}'
+        eval PR_LIGHT_$color='%{$fg[${(L)color}]%}'
+        (( count = $count + 1 ))
+    done
+    PR_NO_COLOUR="%{$terminfo[sgr0]%}"
+
+  # Decide whether to set a screen title
+    case $TERM in
+        screen*)
+    # Check out the above hack. $(cool_pwd)
+            [[ -n "$SSH_TTY" && $HOSTNAME != $MAINHOST ]] && PR_TITLEBAR=$'%{\ek%m: $COOL_PWD\e\\%}' || PR_TITLEBAR=$'%{\ek$COOL_PWD\e\\%}' ;;
+        *)
+    #PR_TITLEBAR='';;
+    esac
+
+  ###
+
+  # Finally, the prompt.
+    if [ $TERM != "dumb" ]; then
+        COOL_PWD=$(cool_pwd)
+        case $HOSTNAME in
+            tie*)
+                PROMPT='${PR_LIGHT_WHITE}%#$PR_NO_COLOUR ' ;;
+            fellow*)
+                PROMPT='${PR_LIGHT_BLUE}%#$PR_NO_COLOUR ' ;;
+            *)
+              PROMPT='${PR_LIGHT_WHITE}[ ${PR_CYAN}${COOL_PWD} $PR_NO_COLOUR${PR_LIGHT_WHITE}] $PR_WHITE%(!.$PR_RED.$PR_WHITE)%#$PR_NO_COLOUR ' ;;
+        esac
+        PS2='$PR_BLUE${}[$PR_LIGHT_GREEN%_$PR_BLUE${}]$PR_NO_COLOUR '
+    else
+    # emacs stuff
+        PROMPT='[%(?..%?:)%!%1(j.:%j.)][%(!.%S$HOSTNAME:u%s.$HOSTNAME):%(!..)%#] '
+    fi
+
+    [[ $TERM != "dumb" ]] && SPROMPT='$PR_BLUE${}[$PR_WHITE${}zsh$PR_BLUE][$PR_WHITE${}correct$PR_BLUE][$PR_LIGHT_RED${}%R$PR_BLUE]$PR_WHITE->$PR_BLUE${}[$PR_GREEN${}%r$PR_BLUE]$PR_WHITE?$PR_NO_COLOUR '
+}
+
+#setprompt
+
+# vim: ft=zsh

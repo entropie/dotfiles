@@ -1,0 +1,30 @@
+= emacs
+[2011-01-24 09:26] >>> ~/.emacs
+
+C-c i   'mt-increment-number-at-point
+C-%     'mt-match-paren
+C-c l   'mt-goto-last-edit
+C-c e   'mt-eshell-here
+C-o     'mt-isearch-occur
+C-w     'backward-kill-word
+M-.     'hippie-expand)
+C-x I   'mt-indent-buffer)
+M-RET   'comment-indent-new-line)
+C-x t   'mt-transpose-windows)
+C-x j   'join-line)
+C-c g   'goto-line)
+C-c G   'goto-char)
+<f1>    'mt-occur) ; grep buffers
+C-c b   'browse-url)
+C-c G   'mt-google)
+C-c B   'browse-url-at-point)
+C-c c   'comment-or-uncomment-region)
+C-c C   'mt-switch-dictionarry)
+C-x i   'mt-insert-userid)
+C-x S   'mt-insert-signature)
+
+C-x E   'mt-insert-excuse)
+
+C-x a   'abbrev-mode
+
+

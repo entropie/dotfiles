@@ -1,0 +1,65 @@
+activity "activity in %n (%t)"
+autodetach on
+bell "bell in %n (%t)"
+caption splitonly "%2n %t"
+crlf off
+debug off
+defbce off
+defhstatus "screen: ^En (^Et)"
+deflogin on
+defmonitor off
+defscrollback 8192
+escape ^Aa
+fit
+hardcopy_append on
+hardcopydir ~/.screen
+hardstatus alwayslastline "%{=b}%{bw} %{.w}%D %{.c}%Y-%m-%d %{.y}%0c %{-b}%{ck} %-Lw%{+b}%{gw} %n%f* %t%? (%u)%? %{-}%{-b}%+Lw %{=b}%{bw} %= %{.w}%H %{.c}[%l] "
+msgminwait 1
+msgwait 2
+pow_detach_msg "ALL YOUR SCREEN ARE BELONG TO US"
+# setenv PROMPT_COMMAND 'echo -n -e "\033k\033\134"'
+# shell -${SHELL}
+shell ${SHELL}
+shelltitle '$ |bash:'
+silencewait 5
+sorendition =b ry
+startup_message off
+# term screen-bce
+# term screen-w
+# termcapinfo  * '' 'hs:ts=\E_:fs=\E\\:ds=\E_\E\\'
+vbell on
+vbell_msg " WHAT YOU SAY!! "
+vbellwait 1
+verbose off
+# windowlist title "Num  Name%=Flags"
+# windowlist string "%3n  %t%=%f"
+windowlist title "Num|Fl|Name"
+windowlist string "%3n%+3=|%f%+3=|%t"
+zombie ^D^C
+
+## internal functions
+bind ^r source "${HOME}/.screenrc"
+bind ^e escape ^Xx
+bind ^s escape ^Aa
+bind ^x lockscreen
+bind o copy
+bind p paste .
+bind . number
+bind l lastmsg
+bind w windowlist -b
+bind r resize
+bind s select
+bind = resize =
+bind + resize +5
+bind - resize -5
+bind ~ resize max
+
+## external programs
+bind _ command -c ext
+bind -c ext m screen -t "mutt" 1 mutt
+
+escape ^pp
+
+bind h hardcopy
+bind P paste
+bind T title

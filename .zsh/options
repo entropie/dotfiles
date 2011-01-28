@@ -1,0 +1,46 @@
+# -*- mode: sh -*-
+# Options.  See zshoptions(1)
+
+setopt                       \
+    auto_pushd               \
+    auto_cd                  \
+    pushd_ignore_dups        \
+    auto_list                \
+    bash_auto_list           \
+    NO_auto_menu             \
+    NO_always_to_end         \
+    auto_name_dirs           \
+    auto_param_slash         \
+    complete_aliases         \
+ NO_complete_in_word         \
+ NO_glob_complete            \
+    list_packed              \
+    list_types               \
+    list_rows_first          \
+ NO_menu_complete            \
+ NO_flow_control             \
+    mark_dirs                \
+    extended_glob            \
+    glob                     \
+    glob_dots                \
+    multibyte                \
+    inc_append_history           \
+    bang_hist                \
+    hist_allow_clobber       \
+    hist_ignore_all_dups     \
+    all_export               \
+    global_export            \
+    clobber                  \
+    hash_dirs                \
+    short_loops              \
+    check_jobs               \
+ NO_hup                      \
+    long_list_jobs           \
+    prompt_bang              \
+    transient_rprompt        \
+    bsd_echo                 \
+    emacs                    \
+    cdablevars               \
+    rm_star_wait             \
+ NO_notify                   
+unsetopt bgnice

@@ -1,0 +1,192 @@
+# -*- mode: sh -*-
+
+[[ `whoami` != "root" ]] && umask 022 || umask 022
+
+# this is nifty
+define:() {
+    [[ -n $@ ]] && { klap=$@:s/\ /%20; elinks --no-numbering --no-references --dump "http://www.google.com/search?q=define:$klap" | sed -n 20,/________________________________/p - | head -n 20 }
+}
+
+git_prompt_info() {
+  ref=$(git-symbolic-ref HEAD 2> /dev/null) || return
+  echo "(${ref#refs/heads/})"
+}
+
+
+function paste-xclip() {
+        BUFFER=$BUFFER"`xclip -o`"
+        zle end-of-line
+}
+
+function cm() {
+    local md=${MAILDIR:-${HOME}/Maildir}
+    local c  ; integer c
+    local bc ; integer bc
+    local i
+    local b
+
+    (( c=0 ))
+    for i in ${md}/*(/N) ; do
+        (( bc=0 ))
+        for b in ${i}/new/*(.N) ; do
+            (( c++  ))
+            (( bc++ ))
+        done
+        if (( bc > 0 )) ; then
+            (( bc == 1 )) && printf "%7d new Mail  in %s\n" $((bc)) ${i:t}
+            (( bc >  1 )) && printf "%7d new Mails in %s\n" $((bc)) ${i:t}
+        fi
+    done
+    (( c >= 1 )) && printf "--------------------------------------------------\n"
+    (( c >  1 )) && printf "%7d new Mails in total.\n" $((c))
+    (( c == 1 )) && printf "%7d new Mail in total.\n" $((c))
+    (( c == 0 )) && printf "%7s new Mail.\n" "No"
+    return 0
+}
+
+function tinyurl() {
+    [[ -z ${1} ]] && print "please give an url to shrink." && return 1
+    local url=${1}
+    local tiny="http://tinyurl.com/create.php?url="
+  #print "${tiny}${url}" ; return
+    wget  -O-             \
+        -o/dev/null     \
+        "${tiny}${url}" \
+        | grep -Eio 'value="(http://tinyurl.com/.*)"' \
+        | sed 's/value=//;s/"//g'
+}
+
+function hgs {
+    exec hg status "$@" 2>&1 | awk ' \
+  /^M /                              { print "\033[0;35m" $0"\033[0m"; next }
+  /^A /                              { print "\033[1;33m" $0"\033[0m"; next }
+  /^R /                              { print "\033[1;35m" $0"\033[0m"; next }
+  /^\? /                             { print "\033[0;33m" $0"\033[0m"; next }
+  /^\! /                             { print "\033[0;31m" $0"\033[0m"; next }
+
+  # fallback
+  { print "\033[0;36m" $0 }
+
+  END { printf "\033[0m" }'
+}
+
+function help()
+{
+    print "Methods:\ttinyurl <url>"
+    print "\t\tdefine <word>"
+    print "\t\treadme"
+    print "\t\taudiorip"
+    print "\t\tjless"
+    print "\t\tpurge"
+    print "\t\tmakepasswords"
+    print "\t\thgs"
+    print "Aliases: <url>"
+    print "\t\trw-"
+    print "\t\trwx"
+    print "\t\tr--"
+    print "\t\tr-x"
+    print "\t\tlowercase"
+    print "\t\tIP"
+}
+
+function readme()
+{
+    local files
+    files=(./(#i)*(read*me|lue*m(in|)ut)*(ND))
+            if (($#files))
+            then $PAGER $files
+            else
+                print 'No README files. Please lart \$MAINTAINER!'
+            fi
+}
+
+function audiorip()
+{
+        mkdir -p ~/ripps
+        cd ~/ripps
+        cdrdao read-cd --device $DEVICE --driver generic-mmc audiocd.toc
+        cdrdao read-cddb --device $DEVICE --driver generic-mmc audiocd.toc
+        echo " * Would you like to burn the cd now? (yes/no)"
+        read input
+        if
+                [ "$input" = "yes" ]; then
+                echo " ! Burning Audio CD"
+                audioburn
+                echo " * done."
+        else
+                echo " ! Invalid response."
+        fi
+}
+
+# pipe jobs to less
+jless() {
+   typeset -x -A tmpstates
+   for i in $jobstates[(I)*] 
+   do
+      tmpstates[$i]=$jobstates[$i]
+   done
+   for i in $tmpstates[(I)*]
+   do
+      echo "[$i]\t$tmpstates[$i]"
+   done  | sort -n |  less
+   unset tmpstates
+}
+
+# clean up directory
+purge() {
+    FILES=(*~(N) .*~(N) \#*\#(N) *.o(N) a.out(N) *.core(N) *.cmo(N) *.cmi(N) .*.swp(N))
+    NBFILES=${#FILES}
+    if [[ $NBFILES > 0 ]]; then
+        print $FILES
+        local ans
+        echo -n "Remove this files? [y/n] "
+        read -q ans
+        if [[ $ans == "y" ]]
+        then
+            rm ${FILES}
+            echo ">> $PWD purged, $NBFILES files removed"
+        else
+            echo "Ok. .. than not.."
+        fi
+    fi
+}
+
+
+# will also let you complete dirs that are cd olddir newdir'able. Pretty nifty.
+# argument-N isn't implemented in _cd, so you need to check for the placement yourself. (Thanks to Bart from the zsh-users ML.)
+        zstyle -e ':completion:*:cd:*' fake '(( CURRENT == 2 )) && reply=(${(f)"$(_cd_what_is_replaceable)"})'
+
+# what can be replaced in $PWD?
+        function _cd_what_is_replaceable {
+            local pwd_ary
+            local curdir
+            local concat
+            pwd_ary=(${(s:/:)PWD})
+            for curdir in $pwd_ary; do
+                output=$(_cd_is_this_replaceable $curdir)
+                (( $#output )) && concat=$concat"\n"$curdir:$output
+            done
+            echo $concat
+            return
+        }
+
+        function _cd_is_this_replaceable {
+            local dir=$1
+            rep=(${~PWD/$dir/*}~$PWD(-/))
+            rep=(${${rep#${PWD%%$dir*}}%${PWD#*$dir}})
+  # I know, kinda hackish...
+            [[ ${rep[0][-4,-1]} != "(-/)" ]] && { echo $rep; return 0 } || return 1
+        }
+
+# display a of possible passwords.
+        function makepasswords()
+        {
+	    perl <<EOPERL
+	my @a = ("a".."z","A".."Z","0".."9",(split //, q{#@,.<>$%&()*^}));
+	for (1..10) { 
+		print join "", map { \$a[rand @a] } (1..rand(3)+7);
+		print qq{\n} 
+	}
+EOPERL
+            }
+

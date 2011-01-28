@@ -1,0 +1,225 @@
+#! /bin/zsh -f
+# -*- mode: sh -*-
+
+DIRSTACKSIZE=50
+
+#export http_proxy="http://tie:8080"
+
+export BROWSER=btab
+export HOMEPAGE='ackro.ath.cx'
+
+export PATH="${PATH}:~/bin"
+export MPD_HOST='localhost'
+export MAILDIR=~/Maildir
+#export LC_CTYPE="en_US.utf8"
+#export LC_NUMERIC="en_US.utf8"
+#export LC_TIME="en_US.utf8"
+#export LC_COLLATE="en_US.utf8"
+#export LC_MONETARY="en_US.utf8"
+#export LC_MESSAGES=C
+#export LC_PAPER="en_US.utf8"
+#export LC_NAME="en_US.utf8"
+#export LC_ADDRESS="en_US.utf8"
+#export LC_TELEPHONE="en_US.utf8"
+#export LC_MEASUREMENT="en_US.utf8"
+#export LC_IDENTIFICATION="en_US.utf8"
+export EDITOR=e
+export PAGER=most
+
+
+export PATH=$PATH:/opt/local/bin
+export MANPATH=$MANPATH:/opt/local/share/man
+export INFOPATH=$INFOPATH:/opt/local/share/info
+
+export PYTHONPATH=/usr/local/lib/python2.5/site-packages:/usr/local/lib/python2.5/site-packages/mercurial:/opt/local/var/macports/software/mercurial/1.0.1_1/opt/local/lib/python2.5/site-packages:$PYTHONPATH
+
+export PATH=/usr/local/git/bin:$PATH
+
+
+fpath=($fpath ~/.zsh/functions)
+
+
+autoload -Uz vcs_info && vcs_info
+
+#zstyle '\'':exec_on_xclip:x11:uri_http'\''  app '\''opera -remote openURL(_eoxc_)'\'''
+
+export HISTFILE=~/.zsh_history
+export HISTSIZE=50000
+export SAVEHIST=50000
+
+export ANT_HOME=/usr/local/ant
+export PATH=${PATH}:${ANT_HOME}/bin
+export JAVA_HOME='/System/Library/Frameworks/JavaVM.framework/Home'
+
+
+
+run-with-sudo () { LBUFFER="sudo $LBUFFER" }
+zle -N run-with-sudo
+
+quoteit() { LBUFFER="$LBUFFER'"; RBUFFER="' $RBUFFER" }
+zle -N quoteit
+
+bindkey -e # emacs def keybindings
+bindkey "^Y"    yank                                # <STRG>-Y
+bindkey "\e[3~" delete-char                         # Delete
+bindkey '^[[7~' beginning-of-line                   # Home (xterm)
+bindkey '^[[8~'  end-of-line                        # End (xterm)
+bindkey '^[[5~'  history-beginning-search-backward  # Page Up
+bindkey '^[[6~'  history-beginning-search-forward   # Page Down
+bindkey '^[[2~' overwrite-mode                      # Insert
+bindkey "^[[A"  up-line-or-search                   # <ESC>-N
+bindkey "^[[B"  down-line-or-search                 # <ESC>-
+bindkey "^Q"  edit-command-line                     # <STRG>-Q
+bindkey " "     magic-space                         # ' ' (Space>
+bindkey "^B"    backward-word                       # <STRG>-B
+bindkey '^Xs' run-with-sudo
+bindkey "^Xq" quoteit
+bindkey "^R"    history-incremental-search-backward # <STRG>-R
+bindkey "^Z"    which-command                       # <STRG>-Z
+bindkey "e[1~" beginning-of-line
+bindkey "e[4~" end-of-line
+bindkey "eOd" emacs-backward-word
+bindkey "ee[C" forward-word
+bindkey "ee[D" backward-word
+bindkey "^[m" copy-prev-shell-word
+bindkey "^?" backward-delete-char
+# bindkey -s '^im' "|$PAGER\n"
+# bindkey -s '^it' "|tidy -i|$PAGER\n"
+# bindkey -s '^ip' "xclip -o"
+bindkey "^X" paste-xclip
+
+if [ "`whoami`" != "root" ]; then
+    case `hostname` in
+        particle)
+           keychain id_dsa 2>/dev/null
+           [ -z "$HOSTNAME" ] && HOSTNAME=`uname -n`
+           [ -f $HOME/.keychain/$HOSTNAME-sh ] && \
+                   . $HOME/.keychain/$HOSTNAME-sh
+           [ -f $HOME/.keychain/$HOSTNAME-sh-gpg ] && \
+                   . $HOME/.keychain/$HOSTNAME-sh-gpg 2> /dev/null
+    esac
+fi
+
+export LS_COLORS="no=00:fi=040:di=01;36"
+[ -f ~/.dircolors  ] && eval `dircolors ~/.dircolors`
+
+[ -x =emacs  ]             && export EDITOR="e"
+
+export WORDCHARS=${WORDCHARS//[&=\/;\!#%\{]}
+#WORDCHARS=''                    # Emacs compatible M-b and M-f
+watch=notme
+WATCHFMT="%n from %M has %a tty%l at %T %W"
+(( ${+QT_XFT} )) || export QT_XFT=1
+(( ${+GDK_USE_XFT} )) || export GDK_USE_XFT=1
+
+export PATH="$PATH:/Users/mit/bin:/usr/local/mysql/bin/"
+export PATH="$PATH:/Users/mit/.jruby/bin/"
+export PATH="$PATH:/Users/mit/.cabal/bin"
+export PATH="$PATH:/Users/mit/bin/depot_tools"
+
+#[ -x /usr/lib/ruby/gems ] && { export GEM_HOME=/usr/lib/ruby/gems/1.8 RUBYOPT=rubygems; unhash -d GEM_HOME &>/dev/null }
+
+export RUBYLIB="/Users/mit/Source/ramaze/lib:$RUBYLIB"
+export RUBYLIB="/Users/mit/Source/innate/lib:$RUBYLIB"
+export JRUBY_HOME="/Users/mit/.jruby"
+
+
+. /sw/bin/init.sh
+
+# $ cd /usr/ports/misc/fileutils
+# $ make install clean
+#  di = directory
+#  fi = file
+#  ln = symbolic link
+#  pi = fifo file
+#  so = socket file
+#  bd = block (buffered) special file (block device)
+#  cd = character (unbuffered) special file (character device)
+#  or = symbolic link pointing to a non-existent file (orphan)
+#  mi = non-existent file pointed to by a symbolic link (visible when you type ls -l)
+#  ex = file which is executable (ie. has 'x' set in permissions (executable)).
+#
+# 0   = default color                   1   = bold
+# 4   = underlined                      5   = flashing text
+# 7   = reverse field                   31  = red
+# 32  = green                           33  = orange
+# 34  = blue                            35  = purple
+# 36  = cyan                            37  = grey
+# 40  = black background                41  = red background
+# 42  = green background                43  = orange background
+# 44  = blue background                 45  = purple background
+# 46  = cyan background                 47  = grey background
+# 90  = dark grey                       91  = light red
+# 92  = light green                     93  = yellow
+# 94  = light blue                      95  = light purple
+# 96  = turquoise                       100 = dark grey background
+# 101 = light red background            102 = light green background
+# 103 = yellow background               104 = light blue background
+# 105 = light purple background         106 = turquoise background
+#
+# Attribute codes:
+#  00 none
+#  01 bold
+#  02 faint                  22 normal
+#  03 standout               23 no-standout
+#  04 underline              24 no-underline
+#  05 blink                  25 no-blink
+#  07 reverse                27 no-reverse
+#  08 conceal
+#  
+export LS_COLORS="fi=36:di=32:ln=1;33:ec=\\e[0;37m:ex=1:mi=1;30:or=1;30:*.c=32:*.bz=32:*.txt=36;1:*.doc=37:*.zip=1;32:*.rar=1;32:*.lzh=1;32:*.lha=1;32:*.arj=1;32:*.tar=1;32:*.tgz=1;32:*.gz=1;32:*~=1;30:*.bak=1;30:*.jpg=1;35:*.gif=1;35:*.tif=1;35:*.tiff=1;35:*.mod=1;31:*.voc=1;31:*.smp=1;31:*.au=1;31:*.wav=1;31:*.s3m=1;31:*.xm=1;31:*.pl=1;33:*.c=1;33"
+LS_COLORS=''
+LS_COLORS=$LS_COLORS:'no=0'           # Normal text       = Default foreground  
+LS_COLORS=$LS_COLORS:'fi=93'           # Regular file      = Default foreground
+LS_COLORS=$LS_COLORS:'di=01;32'          # Directory         = Bold, Yellow
+LS_COLORS=$LS_COLORS:'ln=01;36'       # Symbolic link     = Bold, Cyan
+LS_COLORS=$LS_COLORS:'pi=33'          # Named pipe        = Yellow
+LS_COLORS=$LS_COLORS:'so=01;35'       # Socket            = Bold, Magenta
+LS_COLORS=$LS_COLORS:'do=01;35'       # DO                = Bold, Magenta
+LS_COLORS=$LS_COLORS:'bd=01;37'       # Block device      = Bold, Grey
+LS_COLORS=$LS_COLORS:'cd=01;37'       # Character device  = Bold, Grey
+LS_COLORS=$LS_COLORS:'ex=96'          # Executable file   = Light, Blue
+LS_COLORS=$LS_COLORS:'*FAQ=31;7'      # FAQs              = Foreground Red, Background Black
+LS_COLORS=$LS_COLORS:'*README=31;7'   # READMEs           = Foreground Red, Background Black
+LS_COLORS=$LS_COLORS:'*INSTALL=31;7'  # INSTALLs          = Foreground Red, Background Black
+LS_COLORS=$LS_COLORS:'*.sh=47;31'     # Shell-Scripts     = Foreground White, Background Red
+LS_COLORS=$LS_COLORS:'*.vim=35'       # Vim-"Scripts"     = Purple
+LS_COLORS=$LS_COLORS:'*.swp=00;44;37' # Swapfiles (Vim)   = Foreground Blue, Background White
+LS_COLORS=$LS_COLORS:'*.sl=30;33'     # Slang-Scripts     = Yellow
+LS_COLORS=$LS_COLORS:'*,v=5;34;93'    # Versioncontrols   = Bold, Yellow
+LS_COLORS=$LS_COLORS:'or=01;05;31'    # Orphaned link     = Bold, Red, Flashing
+LS_COLORS=$LS_COLORS:'*.c=1;32'       # Sources           = Bold, Yellow
+LS_COLORS=$LS_COLORS:'*.C=1;33'       # Sources           = Bold, Yellow
+LS_COLORS=$LS_COLORS:'*.h=1;33'       # Sources           = Bold, Yellow
+LS_COLORS=$LS_COLORS:'*.rb=1;35'       # Sources           = Bold, Yellow
+LS_COLORS=$LS_COLORS:'*.cc=1;33'      # Sources           = Bold, Yellow
+LS_COLORS=$LS_COLORS:'*.awk=1;33'     # Sources           = Bold, Yellow
+LS_COLORS=$LS_COLORS:'*.pl=1;33'      # Sources           = Bold, Yellow
+LS_COLORS=$LS_COLORS:'*.jpg=1;32'     # Images            = Bold, Green
+LS_COLORS=$LS_COLORS:'*.jpeg=1;32'    # Images            = Bold, Green
+LS_COLORS=$LS_COLORS:'*.JPG=1;32'     # Images            = Bold, Green
+LS_COLORS=$LS_COLORS:'*.gif=1;32'     # Images            = Bold, Green
+LS_COLORS=$LS_COLORS:'*.png=1;32'     # Images            = Bold, Green
+LS_COLORS=$LS_COLORS:'*.jpeg=1;32'    # Images            = Bold, Green
+LS_COLORS=$LS_COLORS:'*.ppm=1;32'     # Images            = Bold, Green
+LS_COLORS=$LS_COLORS:'*.pgm=1;32'     # Images            = Bold, Green
+LS_COLORS=$LS_COLORS:'*.pbm=1;32'     # Images            = Bold, Green
+LS_COLORS=$LS_COLORS:'*.tar=31'       # Archive           = Red
+LS_COLORS=$LS_COLORS:'*.tgz=31'       # Archive           = Red
+LS_COLORS=$LS_COLORS:'*.gz=31'        # Archive           = Red
+LS_COLORS=$LS_COLORS:'*.zip=31'       # Archive           = Red
+LS_COLORS=$LS_COLORS:'*.sit=31'       # Archive           = Red
+LS_COLORS=$LS_COLORS:'*.lha=31'       # Archive           = Red
+LS_COLORS=$LS_COLORS:'*.lzh=31'       # Archive           = Red
+LS_COLORS=$LS_COLORS:'*.arj=31'       # Archive           = Red
+LS_COLORS=$LS_COLORS:'*.bz2=31'       # Archive           = Red
+LS_COLORS=$LS_COLORS:'*.html=36'      # HTML              = Cyan
+LS_COLORS=$LS_COLORS:'*.htm=1;34'     # HTML              = Bold, Blue
+LS_COLORS=$LS_COLORS:'*.doc=1;34'     # MS-Word *lol*     = Bold, Blue
+LS_COLORS=$LS_COLORS:'*.txt=1;34'     # Plain/Text        = Bold, Blue
+LS_COLORS=$LS_COLORS:'*.o=1;36'       # Object-Files      = Bold, Cyan
+LS_COLORS=$LS_COLORS:'*.a=1;36'       # Shared-libs       = Bold, Cyan
+export LS_COLORS
+
+
+
