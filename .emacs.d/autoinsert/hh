@@ -1,0 +1,25 @@
+// 
+// $Id$
+//
+// Definition of ||| class
+//
+// <real-name> <<mail-name>>
+// <creation-tag>
+//
+// Copyright (C) <real-name>.  All rights reserved.
+//
+
+#ifndef @@@_HH
+#define @@@_HH
+
+class |||%%%
+{
+public:
+    |||($$$);
+    virtual ~|||();
+
+private:
+};
+
+
+#endif // @@@_HH

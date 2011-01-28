@@ -1,0 +1,681 @@
+(defun mt-toggle-utf8-latin1 () 
+  (interactive)
+  (if(or (equal buffer-file-coding-system 'utf-8-unix)
+         (equal buffer-file-coding-system 'mule-utf-8-unix))
+      (progn 
+        (set-buffer-file-coding-system 'latin-1)(save-buffer)
+        (message "buffer converted to latin-1")
+        ) 
+    (set-buffer-file-coding-system 'utf-8)(save-buffer)
+    (message "buffer converted to utf-8")
+    )
+  )
+
+(defun mt-choose-frame-setup (&optional arg)
+  (interactive "P")
+  (if window-system
+      (mt-setup-frame arg)
+    (mt-setup-frame-nox)))
+
+(defun mt-setup-frame-nox ()
+  (interactive)
+  (message "no X")
+  (color-theme-nox))
+
+(defun mt-setup-frame (&optional arg)
+  (interactive "P")
+  (tool-bar-mode -1)
+  (setq color-theme-is-global nil)
+  (set-face-font 'default mt-default-font)
+  (color-theme-initialize)
+  (setq x-select-enable-clipboard t
+        interprogram-paste-function 'x-cut-buffer-or-selection-value)
+  (load "forx.el")
+  (when arg
+    (load "color-theme-pop")
+    (color-theme-pop))
+  (when (not arg)
+    (load "color-theme-dd")
+    (color-theme-dd)))
+       
+;; (defun after-make-frame-function (frame)
+;;   (if window-system
+;;       (mt-setup-frame)
+;;     (mt-setup-frame-nox)
+;;     (message "la")))
+
+;; (add-hook 'before-make-frame-hook
+;;           'mt-setup-frame)
+;; (setq after-make-frame-functions 'after-make-frame-function)
+
+
+    
+(defun mt-line-comment-and-duplicate()
+  "Comment a line and duplicate it."
+  (interactive)
+  (let (
+        (beg (line-beginning-position))
+        (end (+ 1 (line-end-position))))
+    (copy-region-as-kill beg end)
+    (comment-region beg end)
+    (beginning-of-line)
+    (forward-line 1)
+    (yank)
+    (forward-line -1)))
+
+(defun mt-major-mode-p (symbol)
+  "Return non-nil if SYMBOL is a major mode.
+Used in `interactive' forms to read major mode names from the user."
+  (and (fboundp symbol)
+       (let ((function-name (symbol-name symbol)))
+         (and (string-match "-mode\\'" function-name)
+              (not (string-match "\\`turn-\\(on\\|off\\)-"
+                                 function-name))))
+       (not (assq symbol minor-mode-alist))))
+
+(defun mt-read-major-mode ()
+  "Read a major mode from the user, and return it.
+Based on Kevin Rogers' `edit-region' interactive spec."
+  (intern (completing-read
+           (format "Major mode (default `%s'): " major-mode)
+           obarray 'mt-major-mode-p t nil nil
+           (symbol-name major-mode))))
+
+(defun mt-edit-region (&optional edit-mode)
+  "Edit the current region in a separate buffer.
+With a prefix arg, change `major-mode' to EDIT-MODE."
+  (interactive (list (when current-prefix-arg (mt-read-major-mode))))
+  (clone-indirect-buffer nil t)
+  (narrow-to-region (region-beginning) (region-end))
+  (shrink-window-if-larger-than-buffer)
+  (when edit-mode (funcall edit-mode)))
+
+(defun mt-kill-mode-buffers (&optional mode)
+  "Kill all buffers of this major mode.
+With optional argument MODE, all buffers in major mode MODE are killed
+instead."
+  (interactive (list (when current-prefix-arg (ted-read-major-mode))))
+  (setq mode (or mode major-mode))
+  (when (or current-prefix-arg
+            (y-or-n-p (format "Really kill all %s buffers? " mode)))
+    (mapc (lambda (buffer)
+            (when (with-current-buffer buffer
+                    (eq major-mode mode))
+              (kill-buffer buffer)))
+          (buffer-list))))
+
+
+
+(defun fix-backspace ()
+  "Map control-h to work as backspace"
+  (interactive)
+  (keyboard-translate ?\C-h ?\C-?)
+  (global-set-key [(hyper h)] 'help-command))
+
+(defun mt-switch-dictionarry()
+  (interactive)
+  (let* ((dic (if (boundp 'ispell-local-dictionary) ispell-local-dictionary ispell-dictionary))
+         (change (if (string= dic "german8") "english" "german8")))
+    (set (make-local-variable 'ispell-local-dictionary) change)
+    (message "Dictionary switched to %s" change)
+    ))
+
+(defun mt-transpose-windows (arg)
+  "Transpose the buffers shown in two windows."
+  (interactive "p")
+  (let ((selector (if (>= arg 0) 'next-window 'previous-window)))
+    (while (/= arg 0)
+      (let ((this-win (window-buffer))
+            (next-win (window-buffer (funcall selector))))
+        (set-window-buffer (selected-window) next-win)
+        (set-window-buffer (funcall selector) this-win)
+        (select-window (funcall selector)))
+      (setq arg (if (plusp arg) (1- arg) (1+ arg))))))
+
+
+(defun mt-mail-mail-setup ()
+  (turn-on-auto-fill)
+  (set-fill-column 66)
+  (flyspell-mode 1)
+  (bs-config-clear)
+  (setq bs-default-configuration "mail")
+  (ispell-change-dictionary "german8"))
+
+(add-hook 'mew-draft-mode-hook 'mt-mail-mail-setup)
+
+(defun mt-eshell-here ()
+  "Run eshell in the current directory."
+  (interactive)
+  (let ((dir default-directory))
+    (eshell)
+    (unless (string= default-directory dir)
+      (message "Switching to %s" dir)
+      (eshell/cd (list dir))
+      (eshell-emit-prompt))))
+
+(defun mt-occur (&optional arg)
+  "Switch to *Occur* buffer, or run `occur'.
+Without a prefix argument, switch to the buffer.
+With a universal prefix argument, run occur again.
+With a numeric prefix argument, run occur with NLINES
+set to that number."
+  (interactive "P")
+  (if (and (not arg) (get-buffer "*Occur*"))
+      (switch-to-buffer "*Occur*")
+    (occur (read-from-minibuffer "Regexp: ")
+           (if (listp arg) 0 arg))))
+
+(add-hook 'occur-mode-hook
+          (lambda ()
+            (local-set-key (kbd "<f1>") 'occur-next-error)))
+
+(defun mt-text-setup ()
+  "Setup a text buffer,"
+  (line-number-mode 1)
+  (mt-turn-on-show-trailing-whitespace)
+  (auto-fill-mode 1))
+
+(defun mt-dired-setup ()
+  "Setup a direded buffer,"
+  (bs-config-clear)
+  (setq bs-default-configuration "dired")
+  (setq dired-backup-overwrite nil)
+  (mapc
+   (lambda (mapping)
+     (apply #'define-key dired-mode-map mapping))
+   `((,(kbd "C-x p") emms-play-dired)
+     (,(kbd "C-x e") emms-add-dired)
+     (,(kbd "C-x r") wdired-change-to-wdired-mode)
+     )))
+
+
+(defun mt-html-setup ()
+  "Setup a html buffer,"
+  (mapc
+   (lambda (mapping)
+     (apply #'define-key dired-mode-map mapping))
+   `((,(kbd "TAB") indent-for-tab-command)
+     )))
+
+(add-hook 'window-configuration-change-hook 
+          '(lambda ()
+             (setq rcirc-fill-column (- (window-width) 2))))
+
+(defun mt-rcirc-setup ()
+  "Setup a rcirc buffer."
+  (flyspell-mode 1)
+  (unicode-helper-mode 1)
+  (rcirc-track-minor-mode 1)
+  (size-indication-mode 1)
+  (line-number-mode -1)
+  (size-indication-mode -1)
+  (display-time-mode -1)
+  (abbrev-mode 1)
+  (bs-config-clear)
+  (setq bs-default-configuration "rcirc")
+  (set (make-local-variable 'scroll-conservatively) 8192)
+  (set (make-local-variable 'rcirc-fill-prefix) "           ")
+  (mapc
+   (lambda (mapping)
+     (apply #'define-key rcirc-mode-map mapping))
+   `(
+     (,(kbd "M-q") rcirc-unfill)
+     (,(kbd "C-x x") mt-ruby-xmp-region)
+     )))
+7
+(defun mt-ruby-setup ()
+  "Setup a ruby buffer."
+  (let ((ruby-mode-hs-info
+         '(ruby-mode
+           "class\\|module\\|def" ; I intend to extend that, when def work
+           "end"
+           "#"
+           ruby-move-to-block
+           nil
+           )))
+    (if (not (member ruby-mode-hs-info hs-special-modes-alist))
+        (setq hs-special-modes-alist
+              (cons ruby-mode-hs-info hs-special-modes-alist))))
+  (hs-minor-mode 1)
+  (hs-hide-initial-comment-block)
+                                        ;(setq ruby-program-name "irb --inf-ruby-mode")
+  (inf-ruby-keys)
+  (line-number-mode 1)
+  (ruby-electric-mode 1)
+  ;;  (highline-local-mode 1)
+  (fillcode-mode 1)
+  (setq ruby-electric-no-matching-char-in-word nil)
+  (set (make-local-variable 'auto-hscroll-mode) nil)
+  (bs-config-clear)
+  (filladapt-mode 1)
+  (setq bs-default-configuration "ruby")
+  (mapc
+   (lambda (mapping)
+     (apply #'define-key ruby-mode-map mapping))
+   `(
+     (,(kbd "RET") ruby-reindent-then-newline-and-indent)
+     (,(kbd "TAB") mt-indent-or-complete)
+     (,(kbd "C-x x") mt-ruby-xmp-region)
+     (,(kbd "C-x r") mt-ruby-eval-buffer)
+     (,(kbd "C-x t") mt-ruby-xmp)
+     (,(kbd "C-c p") toggle-buffer)
+     (,(kbd "C-t s") toggle-style)
+     (,(kbd "C-h i") ri)
+     (,(kbd "M-e") ruby-end-of-block)
+     (,(kbd "M-a") ruby-beginning-of-block)
+     (,(kbd "M-{") ruby-backward-sexp)
+     (,(kbd "M-}") ruby-forward-sexp)
+     (,(kbd "C-c C-e") hs-show-block)
+     (,(kbd "C-c C-c") hs-hide-block)
+     (,(kbd "C-c C-x") hs-toggle-hiding)
+     (,(kbd "C-c C-t") hide-body)
+     (,(kbd "C-c C-a") hs-show-all)
+     (,(kbd "C-c C-l") hs-hide-level)
+     )))
+
+;; (defun mt-dylan-setup ()
+;;   "Setup a dylan buffer."
+;;   (line-number-mode 1)
+;;   (abbrev-mode 1)
+;;   (filladapt-mode 1)
+;;   (set (make-local-variable 'auto-hscroll-mode) nil)
+;;   (mapc
+;;    (lambda (mapping)
+;;      (apply #'define-key dylan-mode-map mapping))
+;;    `(
+;;      (,(kbd "C-c C-c") compile)
+;;      )))
+
+(defun mt-haskell-setup ()
+  "Setup a haskell buffer."
+  (line-number-mode 1)
+  (abbrev-mode 1)
+  (filladapt-mode 1)
+  (set (make-local-variable 'auto-hscroll-mode) nil)
+  (setq comment-padding " ")
+  (setq comment-start "--"))
+(mapc
+ (lambda (mapping)
+   (apply #'define-key haskell-mode-map mapping))
+ `(
+   (,(kbd "C-c C-c") compile)
+   ))
+
+(add-to-list 'filladapt-token-table '("-- " haskell-comment))
+(add-to-list 'filladapt-token-match-table '(haskell-comment haskell-comment))
+(add-to-list 'filladapt-token-conversion-table '(haskell-comment . exact))
+
+(defun mt-rails-setup ()
+  "Setup a RoR buffer."
+  (line-number-mode 1)
+  (abbrev-mode 1)
+  (set (make-local-variable 'auto-hscroll-mode) nil)
+  (bs-config-clear)
+  (filladapt-mode 1)
+  (setq bs-default-configuration "ruby")
+  (mapc
+   (lambda (mapping)
+     (apply #'define-key ruby-mode-map mapping))
+   `((,(kbd "RET") ruby-reindent-then-newline-and-indent)
+     (,(kbd "TAB") mt-indent-or-complete)
+     (,(kbd "C-h i") ri)
+     )))
+
+(defun mt-howmc-setup ()
+  (howm-mode 1)
+  (message "la")
+  )
+
+
+(defun mt-init-html-mode ()
+  "Initialize the HTML mode for my purposes."
+  (set (make-local-variable 'time-stamp-start)
+       "<!-- time stamp start -->\n")
+  (set (make-local-variable 'time-stamp-end)
+       "\n<!-- time stamp end -->")
+  (set (make-local-variable 'time-stamp-format)
+       "Last modified: %3a %3b %2d %02H:%02M:%02S %Z %:y")
+  (set (make-local-variable 'time-stamp-line-limit) 0)
+  (when (= (point-min)
+           (point-max))
+    (let ((ins nil))
+      (if (string-match "\\.ht$" (buffer-file-name))
+          (progn
+            (insert "<h1>")
+            (setq ins (point))
+            (insert "</h1>\n")
+            (insert "\n"
+                    "<!-- time stamp start -->\n"
+                    "\n"
+                    "<!-- time stamp end -->\n"))
+        (insert "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n"
+                "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Strict//EN\"\n"
+                "                      \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd\">\n"
+                "<html>\n"
+                "<head>\n"
+                "<link rel=\"stylesheet\" type=\"text/css\" href=\"screen.css\"/>\n"
+                "<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\" />\n"
+                "<title>")
+        (setq ins (point))
+        (insert "</title>\n"
+                "</head>\n"
+                "\n"
+                "<body>\n"
+                "<h1></h1>\n"
+                "\n"
+                "\n"
+                "\n"
+                "<hr>\n"
+                "<address></address>\n"
+                "<!-- Created: "
+                (format-time-string "%a %b %e %T %Z %Y")
+                " -->\n"
+                "<!-- time stamp start -->\n"
+                "\n"
+                "<!-- time stamp end -->\n"
+                "</body> </html>\n"))
+      (goto-char ins))))
+
+(defun mt-turn-on-show-trailing-whitespace ()
+  "Set `show-trailing-whitespace' to t."
+  (setq show-trailing-whitespace t))
+
+(defun mt-try-complete-abbrev (old)
+  (if (expand-abbrev) t nil))
+
+(defadvice comment-dwim (around xmp-hack activate)
+  ""
+  (if (and (eq last-command 'comment-dwim))
+      (insert "=>")  ad-do-it))
+
+(defun mt-ruby-xmp ()
+  (interactive)
+  (save-excursion
+    (shell-command-on-region 1 (point-max) (mt-ruby-xmp-command) t t))
+  (goto-char (point-max)))
+
+(defun mt-ruby-xmp-command ()
+  (cond ((save-excursion
+           (goto-char 1)
+           (search-forward "< Test::Unit::TestCase" nil t))
+         "ruby -S xmpfilter.rb --unittest")
+        ((save-excursion
+           (goto-char 1)
+           (re-search-forward "^context.+do$" nil t))
+         "ruby -S xmpfilter.rb --spec")
+        (t
+         "ruby -S xmpfilter.rb")))
+
+
+(defun mt-isearch-occur ()
+  "Invoke `occur' from within isearch."
+  (interactive)
+  (let ((case-fold-search isearch-case-fold-search))
+    (occur (if isearch-regexp isearch-string (regexp-quote isearch-string)))))
+
+(defun mt-match-paren (arg)
+  "Go to the matching paren if on a paren; otherwise insert %."
+  (interactive "p")
+  (cond ((looking-at "\\s\(") (forward-list 1) (backward-char 1))
+        ((looking-at "\\s\)") (forward-char 1) (backward-list 1))
+        (t (self-insert-command (or arg 1)))))
+
+(defun isearch-yank-regexp (regexp)
+  "Pull REGEXP into search regexp." 
+  (let ((isearch-regexp nil)) ;; Dynamic binding of global.
+    (isearch-yank-string regexp))
+  (isearch-search-and-update))
+  
+(defun isearch-yank-symbol (&optional partialp)
+  "Put symbol at current point into search string.
+  
+  If PARTIALP is non-nil, find all partial matches."
+  (interactive "P")
+  (let* ((sym (find-tag-default))
+         ;; Use call of `re-search-forward' by `find-tag-default' to
+         ;; retrieve the end point of the symbol.
+         (sym-end (match-end 0))
+         (sym-start (- sym-end (length sym))))
+    (if (null sym)
+        (message "No symbol at point")
+      (goto-char sym-start)
+      ;; For consistent behavior, restart Isearch from starting point
+      ;; (or end point if using `isearch-backward') of symbol.
+      (isearch-search)
+      (if partialp
+          (isearch-yank-string sym)
+        (isearch-yank-regexp
+         (concat "\\_<" (regexp-quote sym) "\\_>"))))))
+  
+(defun isearch-current-symbol (&optional partialp)
+  "Incremental search forward with symbol under point.
+  
+  Prefixed with \\[universal-argument] will find all partial
+  matches."
+  (interactive "P")
+  (let ((start (point)))
+    (isearch-forward-regexp nil 1)
+    (isearch-yank-symbol partialp)))
+  
+(defun isearch-backward-current-symbol (&optional partialp)
+  "Incremental search backward with symbol under point.
+  
+  Prefixed with \\[universal-argument] will find all partial
+  matches."
+  (interactive "P")
+  (let ((start (point)))
+    (isearch-backward-regexp nil 1)
+    (isearch-yank-symbol partialp)))
+
+(defun mt-ruby-xmp-region (reg-start reg-end)
+  "Pipe the region through Ruby's xmp utility and replace the region 
+with the result."
+  (interactive "r")
+  (save-excursion
+    (shell-command-on-region 
+     reg-start 
+     reg-end "ruby -r xmp -n -e 'xmp($_, \"%l  # %r\n\").gsub(\"\n\", \'\')'" t)
+    (backward-delete-char 1))
+  (goto-char (point-at-eol)))
+
+(defun mt-insert-signature ()
+  (interactive)
+  (insert (shell-command-to-string "mksig")))
+
+(defun mt-attachr (beg end)
+  "Pipe the region through attachr"
+  (interactive "r")
+  (call-process-region beg end "/home/mit/bin/attachr" nil nil nil)
+  (message "pasted"))
+
+(defvar url-nonrelative-link "\\`\\([-a-zA-Z0-9+.]+:\\)"
+  "A regular expression that will match an absolute URL.")
+
+(defun mt-insert-last-paste ()
+  "Insert last paste url from ~/.lastpste"
+  (interactive)
+  (save-excursion
+    (insert-file-literally "/home/mit/.lastpste"))
+  (goto-char (point-at-eol)))
+
+(defun mt-kill-file-and-buffer ()
+  "Removes file associated to current buffer."
+  (interactive )
+  (when (y-or-n-p (concat "Delete " buffer-file-name "? "))
+    (delete-file (buffer-file-name))
+    (kill-buffer nil)))
+
+
+(defun mt-insert-ackro-post-skel (comp)
+  "Insert what we're playing right now."
+  (interactive "sComponent? ")
+  (save-excursion
+    (let ((coding-system-for-read 'latin-1))
+      (call-process "/home/mit/bin/ackro" nil t nil (concat "comp skel " comp)))
+    (backward-delete-char 1))
+  (goto-char (point-at-eol)))
+
+(defun mt-insert-mpd-np ()
+  "Insert what we're playing right now."
+  (interactive)
+  (save-excursion
+    (let ((coding-system-for-read 'latin-1))
+      (call-process "/home/mit/bin/np" nil t nil))
+    (backward-delete-char 1))
+  (goto-char (point-at-eol)))
+
+(defun mt-ruby-eval-buffer () (interactive)
+  "Evaluate the buffer with ruby."
+  (shell-command-on-region (point-min) (point-max) "ruby"))
+
+(defun mt-insert-userid ()
+  "Insert the my full name and address"
+  (interactive)
+  (insert "Michael 'mictro' Trommer <mictro@gmail.com>"))
+
+(defun mt-indent-buffer ()
+  (interactive)
+  (save-excursion
+    (indent-region (point-min) (point-max) nil)))
+
+(require 'calendar)
+(defun mt-insert-any-date (&optional days)
+  (interactive "p*")
+  (insert
+   (calendar-date-string
+    (calendar-gregorian-from-absolute
+     (+ (calendar-absolute-from-gregorian (calendar-current-date))
+        days)))))
+
+(defun mt-insert-date (prefix)
+  "Insert the current date. With prefix-argument, use ISO format. With
+two prefix arguments, write out the day and month name."
+  (interactive "P")
+  (let ((format (cond
+                 ((not prefix) "%Y-%m-%d")
+                 ((equal prefix '(4)) "%d.%m.%Y")
+                 (t "%A, %d. %B %Y")))
+        (system-time-locale "de_DE"))
+    (insert (format-time-string format))))
+
+
+(defun mt-kill-to-beginning-of-line ()
+  "Kill from the beginning of the line to point."
+  (interactive)
+  (kill-region (point-at-bol)
+               (point)))
+
+(defun mt-remove-cr ()
+  "Remove all occurrences of ^M in the current buffer."
+  (interactive)
+  (save-excursion
+    (goto-char (point-min))
+    (while (re-search-forward "\r" nil t)
+      (replace-match ""))))
+
+(defun mt-quoted-insert-file (name delim)
+  "Insert contents of a file with a delimiter, as in mail."
+  (interactive "*fInsert file: \nsDelimiter (default \"> \"):")
+  (if (string= ""delim) (setq delim "> "))
+  (insert-file name)
+  (replace-regexp "^"delim))
+
+(defun mt-unfill-paragraph ()
+  (interactive)
+  (let ((fill-column (point-max)))
+    (fill-paragraph nil)))
+
+(defun mt-indent-or-complete ()
+  "Complete if point is at end of a word, otherwise indent line."
+  (interactive)
+  (if snippet
+      (snippet-next-field)
+    (if (looking-at "\\>")
+        (dabbrev-expand nil)
+      (indent-for-tab-command))))
+
+(defun mt-insert-gpl-v2 ()
+  "Insert standard GPL header."
+  (interactive "*")
+  (insert "# programm - the description\n"
+          "# Copyright (C) Michael 'mictro' Trommer <mictro@gmail.com>\n"
+          "#\n"
+          "# This program is free software; you can redistribute it and/or\n"
+          "# modify it under the terms of the GNU General Public License\n"
+          "# as published by the Free Software Foundation; either version 2\n"
+          "# of the License, or (at your option) any later version.\n"
+          "#\n"
+          "# This program is distributed in the hope that it will be useful,\n"
+          "# but WITHOUT ANY WARRANTY; without even the implied warranty of\n"
+          "# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\n"
+          "# GNU General Public License for more details.\n"
+          "#\n"
+          "# You should have received a copy of the GNU General Public License\n"
+          "# along with this program; if not, write to the Free Software\n"
+          "# Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.\n"
+          "#\n\n"))
+
+(defun mt-lorem ()
+  "Insert a lorem ipsum."
+  (interactive)
+  (insert "Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do "
+          "eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad "
+          "minim veniam, quis nostrud exercitation ullamco laboris nisi ut "
+          "aliquip ex ea commodo consequat. Duis aute irure dolor in "
+          "reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla "
+          "pariatur. Excepteur sint occaecat cupidatat non proident, sunt in "
+          "culpa qui officia deserunt mollit anim id est laborum."))
+
+
+(defun mt-eshell-maybe-bol ()
+  (interactive)
+  (let ((p (point)))
+    (eshell-bol)
+    (if (= p (point))
+        (beginning-of-line))))
+
+(defun mt-dict-cc (word)
+  (interactive "sWord: ")
+  (browse-url (format "http://dict.cc/?s=%s" word)))
+
+(defun mt-google (what)
+  "Use google to search for WHAT."
+  (interactive "sSearch: ")
+  (w3m-browse-url (concat "http://www.google.de/search?q="
+                          (w3m-url-encode-string what))))
+
+(defun mt-choose-browser (url &rest args)
+  (interactive "sURL: ")
+  (if (y-or-n-p "External browser? ")
+      (mt-browse-url-firefox-new-tab url)
+    (w3m-browse-url url)))
+
+(defun mt-browse-url-firefox-new-tab (url &optional new-window)
+  "Open URL in a new tab in Firefox."
+  (interactive (browse-url-interactive-arg "URL: "))
+  (shell-command-to-string (concat "btab " url )))
+
+(defun rfc (num)
+  "Show RFC NUM in a buffer."
+  (interactive "nRFC (0 for index): ")
+  (let ((url (if (zerop num)
+                 "http://www.ietf.org/iesg/1rfc_index.txt"
+               (format "http://www.ietf.org/rfc/rfc%i.txt" num)))
+        (buf (get-buffer-create "*RFC*")))
+    (with-current-buffer buf
+      (let ((inhibit-read-only t))
+        (delete-region (point-min) (point-max))
+        (let ((proc (start-process "wget" buf "wget" "-q" "-O" "-" url)))
+          (set-process-sentinel proc 'rfc-sentinel))
+        (message "Getting RFC %i..." num)))))
+
+(defun rfc-sentinel (proc event)
+  "Sentinel for `rfc'."
+  (with-current-buffer (process-buffer proc)
+    (goto-char (point-min))
+    (view-mode 1)
+    (when (fboundp'rfcview-mode)
+      (rfcview-mode)))
+  (display-buffer (process-buffer proc)))
+
+(provide 'mt-functions)

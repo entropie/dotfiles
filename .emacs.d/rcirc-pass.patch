@@ -1,0 +1,315 @@
+--- rcirc.el	2007-10-22 05:25:58.000000000 +0200
++++ ../rcirc.el	2007-10-22 04:27:02.000000000 +0200
+@@ -217,11 +217,7 @@
+ 				    (list :tag "BitlBee"
+ 					  (const bitlbee)
+ 					  (string :tag "Nick")
+-					  (string :tag "Password"))
+-                                    (list :tag "Server"
+-                                          (const server)
+-                                          (string :tag "Nick")
+-                                          (string :tag "Password"))))
++					  (string :tag "Password"))))
+   :group 'rcirc)
+ 
+ (defcustom rcirc-auto-authenticate-flag t
+@@ -308,8 +304,8 @@
+ If VAL is a cons of coding systems, the car part is used for decoding,
+ and the cdr part is used for encoding."
+   :type '(alist :key-type (choice (string :tag "Channel Regexp")
+-                                  (cons (string :tag "Channel Regexp")
+-                                        (string :tag "Server Regexp")))
++					  (cons (string :tag "Channel Regexp")
++						(string :tag "Server Regexp")))
+ 		:value-type (choice coding-system
+ 				    (cons (coding-system :tag "Decode")
+ 					  (coding-system :tag "Encode"))))
+@@ -438,8 +434,8 @@
+ (defvar rcirc-topic nil)
+ (defvar rcirc-keepalive-timer nil)
+ (defvar rcirc-last-server-message-time nil)
+-(defvar rcirc-server nil)          ; server provided by server
+-(defvar rcirc-server-name nil)     ; server name given by 001 response
++(defvar rcirc-server nil)		; server provided by server
++(defvar rcirc-server-name nil)		; server name given by 001 response
+ (defvar rcirc-timeout-timer nil)
+ (defvar rcirc-user-disconnect nil)
+ (defvar rcirc-connecting nil)
+@@ -473,7 +469,7 @@
+       (make-local-variable 'rcirc-server)
+       (setq rcirc-server server)
+       (make-local-variable 'rcirc-server-name)
+-      (setq rcirc-server-name server) ; update when we get 001 response
++      (setq rcirc-server-name server)	; update when we get 001 response
+       (make-local-variable 'rcirc-buffer-alist)
+       (setq rcirc-buffer-alist nil)
+       (make-local-variable 'rcirc-nick-table)
+@@ -485,9 +481,6 @@
+       (make-local-variable 'rcirc-startup-channels)
+       (setq rcirc-startup-channels startup-channels)
+       (make-local-variable 'rcirc-last-server-message-time)
+-
+-      (rcirc-authenticate)
+-
+       (setq rcirc-last-server-message-time (current-time))
+       (make-local-variable 'rcirc-timeout-timer)
+       (setq rcirc-timeout-timer nil)
+@@ -501,8 +494,8 @@
+       ;; identify
+       (rcirc-send-string process (concat "NICK " nick))
+       (rcirc-send-string process (concat "USER " user-name
+-                                         " hostname servername :"
+-                                         full-name))
++                                      " hostname servername :"
++                                      full-name))
+ 
+       ;; setup ping timer if necessary
+       (unless rcirc-keepalive-timer
+@@ -652,11 +645,11 @@
+                (args2 (match-string 2 args))
+                (args (delq nil (append (split-string args1 " " t)
+ 				       (list args2)))))
+-          (if (not (fboundp handler))
+-              (rcirc-handler-generic process cmd sender args text)
+-            (funcall handler process sender args text))
+-          (run-hook-with-args 'rcirc-receive-message-hooks
+-                              process cmd sender args text)))
++        (if (not (fboundp handler))
++            (rcirc-handler-generic process cmd sender args text)
++          (funcall handler process sender args text))
++        (run-hook-with-args 'rcirc-receive-message-hooks
++                            process cmd sender args text)))
+     (message "UNHANDLED: %s" text)))
+ 
+ (defvar rcirc-responses-no-activity '("305" "306")
+@@ -987,8 +980,8 @@
+     (when (and (rcirc-buffer-process)
+ 	       (eq (process-status (rcirc-buffer-process)) 'open))
+       (with-rcirc-server-buffer
+-        (setq rcirc-buffer-alist
+-              (rassq-delete-all buffer rcirc-buffer-alist)))
++       (setq rcirc-buffer-alist
++	     (rassq-delete-all buffer rcirc-buffer-alist)))
+       (rcirc-update-short-buffer-names)
+       (if (rcirc-channel-p rcirc-target)
+ 	  (rcirc-send-string (rcirc-buffer-process)
+@@ -1257,42 +1250,42 @@
+ 	(setq start (match-beginning 0))
+ 	(replace-match
+ 	 (case (aref (match-string 1) 0)
+-           (?f (setq face
+-                     (case (string-to-char (match-string 3))
+-                       (?w 'font-lock-warning-face)
+-                       (?p 'rcirc-server-prefix)
+-                       (?s 'rcirc-server)
+-                       (t nil)))
+-               "")
+-           (?n sender)
+-           (?N (let ((my-nick (rcirc-nick process)))
+-                 (save-match-data
+-                   (with-syntax-table rcirc-nick-syntax-table
+-                     (rcirc-facify sender
+-                                   (cond ((string= sender my-nick)
+-                                          'rcirc-my-nick)
+-                                         ((and rcirc-bright-nicks
+-                                               (string-match
+-                                                (regexp-opt rcirc-bright-nicks
+-                                                            'words)
+-                                                sender))
+-                                          'rcirc-bright-nick)
+-                                         ((and rcirc-dim-nicks
+-                                               (string-match
+-                                                (regexp-opt rcirc-dim-nicks
+-                                                            'words)
+-                                                sender))
+-                                          'rcirc-dim-nick)
+-                                         (t
+-                                          'rcirc-other-nick)))))))
+-           (?m (propertize text 'rcirc-text text))
+-           (?r response)
+-           (?t (or target ""))
+-           (t (concat "UNKNOWN CODE:" (match-string 0))))
++	    (?f (setq face
++		      (case (string-to-char (match-string 3))
++			(?w 'font-lock-warning-face)
++			(?p 'rcirc-server-prefix)
++			(?s 'rcirc-server)
++			(t nil)))
++		"")
++	    (?n sender)
++	    (?N (let ((my-nick (rcirc-nick process)))
++		  (save-match-data
++		    (with-syntax-table rcirc-nick-syntax-table
++		      (rcirc-facify sender
++				    (cond ((string= sender my-nick)
++					   'rcirc-my-nick)
++					  ((and rcirc-bright-nicks
++						(string-match
++						 (regexp-opt rcirc-bright-nicks
++							     'words)
++						 sender))
++					   'rcirc-bright-nick)
++					  ((and rcirc-dim-nicks
++						(string-match
++						 (regexp-opt rcirc-dim-nicks
++							     'words)
++						 sender))
++					   'rcirc-dim-nick)
++					  (t
++					   'rcirc-other-nick)))))))
++	    (?m (propertize text 'rcirc-text text))
++	    (?r response)
++	    (?t (or target ""))
++	    (t (concat "UNKNOWN CODE:" (match-string 0))))
+ 	 t t nil 0)
+ 	(rcirc-add-face (match-beginning 0) (match-end 0) face))
+       (rcirc-add-face start (match-beginning 0) face))
+-    (buffer-substring (point-min) (point-max))))
++      (buffer-substring (point-min) (point-max))))
+ 
+ (defun rcirc-target-buffer (process sender response target text)
+   "Return a buffer to print the server response."
+@@ -1450,7 +1443,7 @@
+ 					 (window-buffer w))
+ 				     (>= (window-point w)
+ 					 rcirc-prompt-end-marker))
+-                            (set-window-point w (point-max))))
++			      (set-window-point w (point-max))))
+ 			nil t)
+ 
+ 	  ;; restore the point
+@@ -1469,7 +1462,7 @@
+ 						 1)
+ 					      0)
+ 				      (recenter -1)))))))
+-                          nil t))
++				  nil t))
+ 
+ 	  ;; flush undo (can we do something smarter here?)
+ 	  (buffer-disable-undo)
+@@ -1481,9 +1474,9 @@
+ 		   (not (and rcirc-dim-nicks sender
+ 			     (string-match (regexp-opt rcirc-dim-nicks) sender)
+ 			     (rcirc-channel-p target))))
+-          (rcirc-record-activity (current-buffer)
+-                                 (when (not (rcirc-channel-p rcirc-target))
+-                                   'nick)))
++	      (rcirc-record-activity (current-buffer)
++				     (when (not (rcirc-channel-p rcirc-target))
++				       'nick)))
+ 
+ 	(when rcirc-log-flag
+ 	  (rcirc-log process sender response target text))
+@@ -1585,10 +1578,10 @@
+   "Remove NICK from `rcirc-ignore-list'
+ if NICK is also on `rcirc-ignore-list-automatic'."
+   (when (member nick rcirc-ignore-list-automatic)
+-    (setq rcirc-ignore-list-automatic
+-          (delete nick rcirc-ignore-list-automatic)
+-          rcirc-ignore-list
+-          (delete nick rcirc-ignore-list))))
++      (setq rcirc-ignore-list-automatic
++	    (delete nick rcirc-ignore-list-automatic)
++	    rcirc-ignore-list
++	    (delete nick rcirc-ignore-list))))
+ 
+ ;;; activity tracking
+ (defvar rcirc-track-minor-mode-map (make-sparse-keymap)
+@@ -1663,7 +1656,7 @@
+ 	(message "Rcirc-Omit mode enabled"))
+     (remove-from-invisibility-spec '(rcirc-omit . t))
+     (message "Rcirc-Omit mode disabled"))
+-  (recenter (when (> (point) rcirc-prompt-start-marker) -1)))
++    (recenter (when (> (point) rcirc-prompt-start-marker) -1)))
+ 
+ (defun rcirc-switch-to-server-buffer ()
+   "Switch to the server buffer associated with current channel buffer."
+@@ -1865,10 +1858,10 @@
+     (dolist (x (cdr tree))
+       (if (listp x)
+ 	  (setq acc (append acc
+-                            (mapcar (lambda (y)
+-                                      (cons (concat ch (car y))
+-                                            (cdr y)))
+-                                    (rcirc-rebuild-tree x))))
++			   (mapcar (lambda (y)
++				     (cons (concat ch (car y))
++					   (cdr y)))
++				   (rcirc-rebuild-tree x))))
+ 	(setq acc (cons (cons ch x) acc))))
+     acc))
+ 
+@@ -2292,14 +2285,14 @@
+       (rcirc-print process sender "NOTICE"
+ 		   (cond ((rcirc-channel-p target)
+ 			  target)
+-;;; -ChanServ- [#gnu] Welcome...
++			 ;;; -ChanServ- [#gnu] Welcome...
+ 			 ((string-match "\\[\\(#[^\] ]+\\)\\]" message)
+ 			  (match-string 1 message))
+ 			 (sender
+ 			  (if (string= sender (rcirc-server-name process))
+ 			      nil	; server notice
+ 			    sender)))
+-                   message t))))
++                 message t))))
+ 
+ (defun rcirc-handler-WALLOPS (process sender args text)
+   (rcirc-print process sender "WALLOPS" sender (car args) t))
+@@ -2536,22 +2529,19 @@
+ 		 (rcirc-send-string
+ 		  process
+ 		  (concat
+-		   "PRIVMSG nickserv :identify " (car args))))
++		   "PRIVMSG nickserv :identify "
++		   (car args))))
+ 		((equal method 'chanserv)
+ 		 (rcirc-send-string
+ 		  process
+ 		  (concat
+-		   "PRIVMSG chanserv :identify " (car args) " " (cadr args))))
++		   "PRIVMSG chanserv :identify "
++		   (car args) " " (cadr args))))
+ 		((equal method 'bitlbee)
+ 		 (rcirc-send-string
+ 		  process
+ 		  (concat "PRIVMSG &bitlbee :identify " (car args))))
+-                ((equal method 'server)
+-                 (message "Sending PASS command to %s" 'server)
+-                 (rcirc-send-string
+-                  rcirc-process
+-                  (concat "PASS " (car args))))
+-                (t
++		(t
+ 		 (message "No %S authentication method defined"
+ 			  method))))))))
+ 
+@@ -2573,8 +2563,8 @@
+           (funcall handler process target sender args)
+           (unless (or (string= request "ACTION")
+ 		      (string= request "KEEPALIVE"))
+-            (rcirc-print process sender "CTCP" target
+-                         (format "%s" text) t))))))
++              (rcirc-print process sender "CTCP" target
++			   (format "%s" text) t))))))
+ 
+ (defun rcirc-handler-ctcp-VERSION (process target sender args)
+   (rcirc-send-string process
+@@ -2608,7 +2598,7 @@
+   "The face used to highlight my messages."
+   :group 'rcirc-faces)
+ 
+-(defface rcirc-other-nick               ; font-lock-variable-name-face
++(defface rcirc-other-nick	     ; font-lock-variable-name-face
+   '((((class grayscale) (background light))
+      (:foreground "Gray90" :weight bold :slant italic))
+     (((class grayscale) (background dark))
+@@ -2662,7 +2652,7 @@
+   "The face used to highlight server messages."
+   :group 'rcirc-faces)
+ 
+-(defface rcirc-server-prefix        ; font-lock-comment-delimiter-face
++(defface rcirc-server-prefix	 ; font-lock-comment-delimiter-face
+   '((default :inherit rcirc-server)
+     (((class grayscale)))
+     (((class color) (min-colors 16)))

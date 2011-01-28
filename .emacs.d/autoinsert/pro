@@ -1,0 +1,32 @@
+# 
+# $Id$
+#
+# TMake project file for |||
+#
+# <real-name> <<mail-name>>
+# <creation-tag>
+#
+# Copyright (C) <real-name>.  All rights reserved.
+#
+
+PROJECT                 = |||
+TEMPLATE                = app
+CONFIG                  = warn_on debug qt
+
+OBJECTS_DIR             = obj
+MOC_DIR                 = moc
+
+unix:TMAKE_LIBDIR_X11  += 
+unix:TMAKE_LIBS_X11    += 
+
+TMAKE_INCDIR_QT        += 
+
+DEPENDPATH	       +=
+
+HEADERS                 =
+
+SOURCES                 = \
+                          main.cpp
+
+#DESTDIR                 =
+TARGET                  = !!!

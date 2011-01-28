@@ -1,0 +1,26 @@
+// -*- Mode: C++ -*-
+//
+// $Id$
+//
+// Definition of ||| class
+//
+// <real-name> <<mail-name>>
+// <creation-tag>
+//
+// Copyright (C) <real-name>.  All rights reserved.
+//
+
+#ifndef @@@_H
+#define @@@_H
+
+class |||%%%
+{
+public:
+    |||($$$);
+    virtual ~|||();
+
+private:
+};
+
+
+#endif // @@@_H

@@ -1,0 +1,34 @@
+// 
+// $Id$
+//
+// Implementation of ||| class
+//
+// <real-name> <<mail-name>>
+// <creation-tag>
+//
+// Copyright (C) <real-name>.  All rights reserved.
+// 
+
+#include "!!!.hh"
+
+/*!
+  \class ||| !!!.hh
+  \brief
+
+*/
+
+/*!
+  Default constructor
+*/
+
+|||::|||($$$)%%%
+{
+}
+
+/*!
+  Destroys the object
+*/
+
+|||::~|||()
+{
+}

@@ -1,0 +1,1 @@
+../Source/Extern/gitsum/gitsum.el

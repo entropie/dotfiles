@@ -1,0 +1,41 @@
+// 
+// $Id$
+//
+// Implementation of ||| class
+//
+// <real-name> <<mail-name>>
+// <creation-tag>
+//
+// Copyright (C) <real-name>.  All rights reserved.
+//
+
+
+#include "!!!.hpp"
+
+/*! \file !!!.cpp
+  Implementation of ||| class
+*/
+
+/*!
+  \class ||| !!!.hpp
+  \brief
+  \author <a href="mailto:<mail-name>"><real-name></a>
+  \date Enter current date here
+
+*/
+
+/*!
+  Default constructor
+*/
+
+|||::|||($$$)%%%
+{
+}
+
+/*!
+  Destroys the object
+*/
+
+|||::~|||()
+{
+}
