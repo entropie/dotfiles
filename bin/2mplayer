@@ -1,0 +1,2 @@
+#!/bin/sh
+mplayer -ao alsa:noblock:device=hw=0.0 "$1"
