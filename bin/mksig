@@ -1,0 +1,5 @@
+#!/usr/bin/env ruby
+
+SIG = File.open(File.join(ENV['HOME'], '.signature')).readlines.join.strip
+puts SIG
+

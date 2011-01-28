@@ -1,0 +1,27 @@
+#!/usr/bin/env ruby
+
+# code
+loc = 0
+locb = 0
+
+# comments
+cloc = 0
+clocb = 0
+
+Dir['**/*.rb'].each do |file|
+  comment = false
+  File.readlines(file).each do |line|
+    comment = true if line =~ /^=begin/
+    comment = false if line =~ /^=end/
+    unless comment or line =~ /^\s*#/ or line =~ /^\s*$/
+      loc += 1
+      locb += line.strip.size
+    else
+      cloc += 1
+      clocb += line.strip.size
+    end
+  end
+end
+
+puts "#{loc} LoC (#{locb} bytes)"
+puts "#{cloc} Commented LoC (#{clocb} bytes)"

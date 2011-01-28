@@ -1,0 +1,11 @@
+#!/usr/bin/env ruby
+
+Cmd = "fortune -s chalkboard homer drugs startrek wisdom tao dune  starwars futurama"
+
+loop do
+  puts `#{Cmd}`
+  puts
+  puts
+  sleep 20
+end
+

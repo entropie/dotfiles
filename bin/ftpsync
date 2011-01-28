@@ -1,0 +1,826 @@
+#!/usr/bin/perl -w 
+
+=head1 NAME 
+
+ftpsync - FTP sync or copy tool. Synchronize a remote
+arborescence from a local directory by using FTP.
+
+$Revision: 1.80 $
+
+=head1 INSTALL
+
+ Get ftpsync at http://www.linux-france.org/prj/ftpsync/dist/
+ tar xzvf  ftpsync-x.xx.tgz  # x.xx is the version number
+ Read the INSTALL file.
+ freshmeat record: http://freshmeat.net/projects/ftpsync/
+
+=head1 SYNOPSIS
+
+  ftpsync [options] SOURCE DEST
+
+  ftpsync [--host server] [--port <num>]
+          [--user <string>] [--passfile <string>] 
+          [--pattern <string>] 
+          [--excludelist <file>]
+          [--hash] [--force] 
+	  [--delete]
+          [--norecursive]
+          [--nostat]
+          [--dry]
+	  [--debug] [--debugftp]
+	  [--version]
+          SOURCE DEST
+
+  ftpsync --help
+  ftpsync
+  
+=cut
+# comment
+=pod
+
+=head1 DESCRIPTION
+
+The command ftpsync is a tool allowing incremental and recursive FTP transfer
+from a local directory to a remote FTP-served directory.
+
+We sometimes need to mirror a set of files on a remote ftp server. The
+perfect tool (rsync) is not always available.
+
+Developing a script invoking a standard FTP client software will cause
+useless transfers (all files again and again even if they have not
+changed), and taking subdirectories into account will not be easy.
+
+ftpsync is the adequate tool because it reduces the amount of data
+transfered by not transfering a given local file if the remote copy
+has an newer date (so the copy is already done and up to date) and the
+same size (transfert completely done). The difference between system
+clocks is taken into account using the ftp protocol.  ftpsync is
+somewhat "like" the rsync command but it uses the FTP protocol and
+only transfers local files to a remote FTP server. Moreover it
+implements the missing 'recursive PUT' FTP command.
+
+=head1 OPTIONS
+
+Invoke: ftpsync --help
+
+=head1 HISTORY
+
+I wrote ftpsync because I could not find a good working ftp client able
+to recursively update remote ftp servers from a local directory.
+Several softwares tested were buggy. They can get (remote to local)
+recursively (ftpsync can't and won't be able to do that) but can not
+easily put (local to remote) recursively.
+
+=head1 EXAMPLES
+
+While working on ftpsync parameters please run ftpsync in dry mode (no
+modification induced) with the --dry option. Nothing bad can be done
+this way.
+
+To copy recursively directory d1/ on remote ftp server ftp.foo.org:
+
+ ftpsync --host ftp.foo.org --user bob --passfile /etc/secret \
+         dir1 /pub/mystuff/dir1
+
+or use the following syntax (URI syntax in DEST):
+
+ ftpsync --user bob --passfile /etc/secret \\
+         dir1 ftp://ftp.foo.org/pub/mystuff/dir1
+
+Then, you will have /pub/mystuff/dir1/ content on the remote server updated
+from the local directory dir1/
+
+You can remove recursively a directory (or several) with the --del option:
+
+ ftpsync --user bob --passfile /etc/secret --host ftp.foo.org \\
+         --del /pub/mystuff/dir1 --del /pub/mystuff/dir2 
+
+
+=head1 EXIT STATUS
+
+ftpsync will exit with a 0 status (return code) if everything went good.
+Otherwise, it exits with a non-zero status.
+
+So if you have a buggy internet connection, you can use this loop 
+in a Bourne shell:
+
+	while ! ftpsync ...; do 
+	      echo ftpsync not complete
+	done
+
+=head1 SPECIAL BEHAVIOR
+
+If you want a special behavior (passive etc.) then use environment
+variables as documented in the Net::FTP manual (run command "perldoc
+Net::FTP" then read :-))
+For example:
+
+ FTP_PASSIVE=1; export FTP_PASSIVE
+ ftpsync ...
+
+=head1 AUTHOR
+
+Gilles LAMIRAL lamiral@linux-france.org
+
+=head1 LICENSE
+
+ftpsync is free, gratis and open source software cover by the GNU General 
+Public License. See the GPL file included in the distribution or the web site
+http://www.gnu.org/licenses/licenses.html
+
+=head1 BUGS
+
+The FTP protocol can not create remote hard or symbolic links,
+nor special file like devices etc. ftpsync can only do what ftp also can.
+Symbolic links are ignored. Hard links are treated like normal files since
+they are normal files.
+
+If the system clocks on both side are very different then
+you can encounter problems since ftpsync use the
+modification time to determine if a remote file has to be
+updated. This problem only occurs if files on both side are
+the same size. This problem is fixed since release 1.65 but
+I leave this comment here in case you encounter it again.
+
+Report any bugs to the author: lamiral@linux-france.org
+
+=head1 SIMILAR SOFTWARES
+
+Recently Nat found similar free open and gratis tools.
+See also (I did not test them): 
+ http://sourceforge.net/projects/ftpsync/
+ http://www.geocities.com/z_design_studio/ftpsync.html
+Feedback will be welcome.
+
+$Id: ftpsync 79 2007-02-07 12:05:45Z entropie $
+
+=cut
+  
+use strict;
+use Net::FTP;
+use Getopt::Long;
+use File::Find;
+use File::Basename;
+use Sys::Hostname;
+
+my(
+   $rcs, $debug, $debugftp,
+   $host, $port, $user, $password, $passfile, 
+   $dest, $src,
+   $ftp, $hostname, $pattern, $hash, $force, $recursive,
+   $excludelist, %excludelist, 
+   $put_bad, $put_good, $put_tot, $size_put_bad,
+   $mkdir_bad, $mkdir_good, $mkdir_tot, 
+   $del_bad, $del_good, $del_tot, 
+   $rmdir_bad, $rmdir_good, $rmdir_tot,
+   $size_total, $size_put, $size_put_no_need, $put_no_need,
+   $nb_files_found,
+   $stat,
+   @ftp_bad, 
+   $help,
+   $time, $count, @deltree, $dry, $delete,
+   $sizeonly,
+   $clock_diff,
+   $version, $VERSION,
+);
+
+$rcs = ' $Id: ftpsync 79 2007-02-07 12:05:45Z entropie $ ';
+$rcs =~ m/,v (\d+\.\d+)/;
+$VERSION = ($1) ? $1 : "UNKNOWN";
+
+get_options();
+
+
+usage() and exit unless (defined($host)) ;
+
+
+$hostname = hostname();
+$time = time();
+$debug and print "time     = $time\n";
+$debug and print "hostname = $hostname\n";
+
+$count = 1;
+
+$user      = defined($user)       ? $user      : "anonymous";
+$password  = defined($password)   ? $password  : "anonymous\@$hostname";
+$dest      = defined($dest)       ? $dest      : ".";
+$src       = defined($src)        ? $src       : ".";
+$pattern   = defined($pattern)    ? $pattern   : '.*';
+$force     = defined($force)      ? 1          : 0;
+$dry       = defined($dry)        ? 1          : 0;
+$recursive = defined($recursive)  ? $recursive : 1;
+$stat      = defined($stat)       ? $stat      : 1; # stat by default
+$port      = defined($port)       ? $port      : 21;
+
+$put_good   = 0;
+$put_bad    = 0;
+$put_tot    = 0;
+$del_good   = 0;
+$del_bad    = 0;
+$del_tot    = 0;
+$mkdir_good = 0;
+$mkdir_bad  = 0;
+$mkdir_tot  = 0;
+$rmdir_good = 0;
+$rmdir_bad  = 0;
+$rmdir_tot  = 0;
+$size_total = 0;
+$size_put   = 0;
+$size_put_bad = 0;
+$size_put_no_need = 0;
+$put_no_need = 0;
+
+$ftp = Net::FTP->new("$host", Port => $port, Debug => $debugftp);
+die "Can not connect to $host: $@" unless defined($ftp);
+
+if (defined($passfile)) {
+	$password = extractTheFirstLine($passfile);	  
+}
+
+if (defined($excludelist)) {
+	%excludelist = extractList($excludelist);
+	$debug and print "Excluded files or directories :\n",
+	  map("$_\n", keys(%excludelist));
+}
+
+$ftp->login($user, $password) or 
+die "Can not login to $host with user $user : $! $@";
+
+if (@deltree) {
+	my @trees = @deltree;
+	print "will delete recursively @trees\n";
+	rmrf(@trees);
+	$ftp->quit;
+	exit_status();
+}
+
+
+$ftp->binary or
+  die "Can not set binary mode: $! $@";
+
+my $rpwd = $ftp->pwd();
+
+
+$ftp->cwd($rpwd);
+
+$ftp->hash(1) if defined($hash);
+
+my $srcbase;
+if (-f $src) {
+	$srcbase = dirname($src);
+}elsif(-d $src) {
+	# remove trailing /
+	$src =~ s/(.+)\/$/$1/;
+	$srcbase = $src;
+}
+
+if ($delete) {
+	print "will delete $dest according to $src\n";
+	$debug and print 
+		"src     : $src\n",
+		"srcbase : $srcbase\n",
+		"dest    : $dest\n",
+		;		
+	sync_delete($dest);
+}
+
+sub get_diff_clock {
+	
+	my $clock_nam = ".ftpsync.clockref";
+	my $clock_ref = "$clock_nam";
+	my $clock_rem = "$dest/$clock_nam";
+
+	$debug and print 
+	  "creating $clock_ref locally\n";
+	open(CLOCK_REF, ">$clock_ref") || return(0);
+	close(CLOCK_REF);
+	$debug and print 
+	  "creating $clock_ref remotely\n";
+	$ftp->mkdir($dest);
+	$ftp->put($clock_ref, $clock_rem)|| return(0);
+	my $localMtime  = (stat($clock_ref))[9];
+	my $remoteMtime = $ftp->mdtm($clock_rem);
+	$ftp->delete($clock_rem);
+	my $clock_diff = $remoteMtime - $localMtime;
+	$debug and print 
+	  "local  mtime: $localMtime\n",
+	  "remote mtime: $remoteMtime\n",
+	  "diff   mtime: $clock_diff\n";
+	unlink($clock_ref);
+	$debug and print "leaving date stuff\n";
+	return($clock_diff);
+}
+
+
+$clock_diff = get_diff_clock();
+
+find(\&wanted, $src);
+
+
+$ftp->quit;
+
+exit_status();
+
+sub exit_status {
+	print ftp_stats() if ($stat);
+	exit(1) if @ftp_bad;
+	exit(0);
+}
+
+sub ftp_stats {
+	my @stats;
+	push (@stats, "-" x 80, "\n");
+	push (@stats, "Errors: synchronisation is NOT well done, look at the problems and retry\n",@ftp_bad) if @ftp_bad;
+	push (@stats, 
+	      stat_line($put_good, $put_tot, "put files succeeded\n"),
+	      stat_line($put_no_need, $nb_files_found, "put files not done (files already put or avoided)\n"),
+	      stat_line($put_good, $nb_files_found, "put files done\n"),
+	      stat_line($del_good, $del_tot, "del files succeeded\n"),
+	      stat_line($mkdir_good, $mkdir_tot, "mkdir directory succeeded\n"),
+	      stat_line($rmdir_good, $rmdir_tot, "rmdir directory succeeded\n"),
+	      stat_line($size_put, $size_total, "bytes transfered\n"),
+	      stat_line($size_put_bad, $size_total, "bytes failed transfered\n"),
+	      stat_line($size_put_no_need, $size_total, "bytes NOT transfered (files already put or avoided)\n"),
+	      
+	);
+	return(@stats);
+}
+
+sub stat_line {
+	my($v1, $v2, $com) = @_;
+	if ($v2) {
+		my $frac = "$v1/$v2";
+		return(sprintf("%8d/%-8d %s", $v1, $v2, $com));
+		
+	}else{
+		return("");
+	}
+}
+
+sub wanted {
+	my $localDir  = $File::Find::dir;
+	my $localFile = $_;
+	my $remote    = $File::Find::name;
+	$remote       =~ s/^${srcbase}\/*//;
+	
+	my $remoteFile = "$dest/" . $remote; 
+	
+	# remove "./" strings 
+	$remoteFile =~ s#/\./#/#g;
+	
+	$debug and print 
+	  "-" x 80, "\n",
+	  "local  dir   : $localDir\n",
+	  "local  file  : $localFile\n",
+	  "Find::name   : $File::Find::name\n",
+	  "src          : $src\n",
+	  "srcbase      : $srcbase\n",
+	  "remote       : $remote\n",
+	  "remote file  : $remoteFile\n";
+
+        if ($excludelist and $excludelist{$File::Find::name} ) {
+		print "excluded $File::Find::name\n";
+		$File::Find::prune=1;
+		return;
+		
+	}
+	if (not $recursive and ($src ne $File::Find::name)) {
+		$debug and print 
+			"prune because [$recursive][$src][$File::Find::name]\n";
+		$File::Find::prune=1;
+	}
+	my @ls = $ftp->dir(" -a $remoteFile") ;
+	#print "dir -a $remoteFile: {@ls}\n";
+	$debug and print dump_ftp($ftp);
+	my $risdir;
+	
+	if (@ls == 0) {
+		$debug and print "no directory or no permission\n";
+	}
+	if (@ls == 1) {
+		$debug and print "$remoteFile is a file\n";
+	}
+	if (@ls >= 2) {
+		$debug and print "$remoteFile is a directory\n";
+		$risdir = 1;
+	}
+
+	if (-d) {
+		  # A local directory
+		  create_dir($remoteFile);
+		  return;
+	}
+	if (-l) {
+		  $debug and print "do not create link $remoteFile\n";
+		  return;
+	}
+	if (-f) {
+		if($risdir) {
+			rmrf($remoteFile);
+		}
+		copy_file($localFile, $remoteFile);
+		return;
+	}
+}
+
+
+
+sub create_dir {
+	my ($remoteFile) = @_;
+	
+	my $rpwd = $ftp->pwd();
+	if ($ftp->cwd("$remoteFile")){
+		$debug and print "remote directory $remoteFile exists\n";
+		$ftp->cwd($rpwd);
+	}else{
+		$debug and print dump_ftp($ftp);
+		$debug and print "could not cwd to remote dir $remoteFile\n",
+			"guess it does not exist\n";
+		print "mkdir $remoteFile\n";
+		$dry or do {
+			$ftp->mkdir($remoteFile);
+			$mkdir_tot++;
+			if ($ftp->ok()){
+				print "successful mkdir $remoteFile\n";
+				$mkdir_good++;
+			}else{
+				print "failed mkdir $remoteFile\n",
+			  		"guess it is already a file, so deleting $remoteFile\n";
+				$ftp->delete($remoteFile);
+				$del_tot++;
+				if ($ftp->ok()){
+					$del_good++;
+				}else{
+					$del_bad++;
+				}
+				$ftp->mkdir($remoteFile);
+				
+				if ($ftp->ok()){
+					print "successful mkdir $remoteFile\n";
+					$mkdir_good++;
+				}else{
+				  	print "failed again mkdir $remoteFile\n";
+					$mkdir_bad++;
+					push(@ftp_bad, $ftp->message());
+				}  
+			}
+		};
+		return;
+	}
+}
+
+
+sub copy_file  {
+
+	my($localFile, $remoteFile) = @_;
+	$nb_files_found++;
+	unless ($File::Find::name =~ m/$pattern/)
+	  {
+		  $debug and print "did not put \'$remoteFile\': filename unmatched by --pattern $pattern\n";
+		  $put_no_need++;
+		  return;
+	  }
+	
+	my($localSize,$localMtime)= (stat($localFile))[7,9];
+	$size_total += $localSize if defined($localSize);
+	my $remoteMtime = $ftp->mdtm($remoteFile);
+	my $remoteSize = $ftp->size($remoteFile);
+	
+	$debug and print "local  mtime read : $localMtime\n"  if defined($localMtime);
+	$debug and print "remote mtime read : $remoteMtime\n" if defined($remoteMtime);
+	$debug and print "remote mtime fixed: ", $remoteMtime - $clock_diff,
+	  "\n" if defined($remoteMtime);
+	
+	$debug and print "local  size : $localSize\n"   if defined($localSize);
+	$debug and print "remote size : $remoteSize\n"  if defined($remoteSize);
+	
+	
+	if (   not ($force)
+	       and (defined($remoteMtime) and defined($remoteSize))
+	       and ($remoteSize == $localSize)
+	       and (($sizeonly)
+		    or ($remoteMtime - $clock_diff >= $localMtime)))
+	  {
+		  # file already exists and is the same
+		  # and mode --force is off
+		  $debug and print "up to date $remoteFile\n";
+		  $put_no_need++;
+		  $size_put_no_need += $localSize;
+		  return;
+	  }
+	print "put $localFile  $remoteFile\n";
+	$dry or do {
+		my $remoteName = $ftp->put($localFile, $remoteFile);
+		$put_tot++;
+		if ($ftp->ok()){
+		  $debug and print "successful put to $remoteName\n";
+		  $put_good++; $size_put += $localSize;
+		}
+		else{
+			if ($ftp->message() =~ /overwrite/i) {
+				my $rm = $ftp->delete($remoteFile);
+				if ($ftp->ok()) {
+				copy_file($localFile,$remoteFile);
+				} else {
+					print "failed delete and put to $remoteFile\n";
+					$put_bad++;
+					$size_put_bad += $localSize;
+					push (@ftp_bad, $ftp->message());
+				}
+			} else {
+			print "failed put to $remoteFile\n";
+			$put_bad++;
+			$size_put_bad += $localSize;
+			push(@ftp_bad, $ftp->message());
+			}
+		}
+		$debug and print dump_ftp($ftp);
+	};
+}
+
+sub dump_ftp {
+	my ($ftp) = @_;
+	my @dump;
+	push(@dump,
+		"ftp message : ", $ftp->message(), "",
+		"ftp code    : ", $ftp->code(), "\n",
+		"ftp ok      : ", $ftp->ok(), "\n",
+		"ftp status  : ", $ftp->status(), "\n",
+		);
+	return @dump;
+}
+
+sub rmrf {
+	my (@dir) = @_;
+	foreach my $dir (@dir) { 
+		    my @what = $ftp->dir("-a $dir");
+		    #print "WHAT: {@what}\n";
+		    next unless @what;
+		    if (@what == 1) {
+		            $debug and print "$dir is a file\n";
+			    print "delete $dir\n";
+			    $dry or do {
+			    	$ftp->delete($dir);
+				$debug and print dump_ftp($ftp);
+			    };
+			    next;
+		    }
+		    print "removing recursively $dir\n";
+		    foreach my $what (@what) {
+			    #print "what:[$what]\n";
+			    $what =~ /^(.).*\d\d:\d\d\s(.*)$/;
+			    #$what =~ /^(.).*\s(\S+)/;
+			    my ($type, $name) = ($1,$2);
+			    #print "($type, $name)\n";
+			    next if ($name eq ".." or $name eq ".");
+			    my $fullname = "$dir\/$name";
+			    #print "$fullname\n";
+			    unless ($type eq "d") {
+				     $debug and print "$fullname is a file\n";
+				     print "delete $fullname\n";
+				     $dry or do {
+				     	$ftp->delete($fullname);
+					$del_tot++;
+				     	$debug and print dump_ftp($ftp);
+					if($ftp->ok()) {
+						$del_good++;
+					}else{
+						$del_bad++;
+					}
+				     };
+			    }else{
+				    $debug and print 
+				    	"$fullname is a directory\n";
+				    rmrf($fullname);
+			    }
+		    }
+		    print "rmdir $dir\n";
+                    $dry or do { 
+		    	$ftp->rmdir($dir);
+			$rmdir_tot++;
+			$debug and print dump_ftp($ftp);
+			if ($ftp->ok()) {
+				$rmdir_good++;
+			}else{
+				$rmdir_bad++;
+			}
+		    };
+	    }
+}
+
+
+sub sync_delete {
+	my ($dir) = @_;
+	return unless ($dir);
+	my $local = $dir;
+	$local      =~ s/^${dest}\/*//;	
+	my $localFile  = "$srcbase/" . $local; 
+	$debug and print 
+		"srcbase : $srcbase\n",
+		"dir   : $dir\n",
+		"local : $local\n",
+		"localFile : $localFile\n",
+		;
+	$ftp->cwd($dest) or die;
+
+	my @what = $ftp->dir("-a $dir");
+        #print "WHAT: {@what}\n";
+	
+	return unless @what;
+	if (@what == 1) {
+		$debug and print "remote $dir is a file\n";
+		if (-e $localFile){
+			$debug and print "$localFile exists\n";
+			next;
+		}
+	    	print "delete $dir\n";
+	    	$dry or do {
+	    	    $ftp->delete($dir);
+	    	    $debug and print dump_ftp($ftp);
+	    	};
+	    	next;
+	} 
+	print "sync deleting recursively $dir\n";
+	foreach my $what (@what) {
+		#print "what:[$what]\n";
+		next if ($what =~ m/^total/);
+		$what =~ /^(.).*\d\d:\d\d\s(.*)$/;
+		
+		my ($type, $name) = ($1,$2);
+		next unless (defined($type) and defined($name));
+		#print "($type, $name)\n";
+		next if ($name eq ".." or $name eq ".");
+		my $fullname = "$dir\/$name";
+		my $localname = "$localFile\/$name";
+		$debug and print "fullname  : $fullname\n";
+		$debug and print "localname : $localname\n";
+		unless ($type eq "d") {
+			$debug and print "remote $fullname is a file\n";
+			$debug and print "test $localname\n";
+			if (-e $localname){
+				$debug and print "$localname exists\n";
+				next;
+			}
+			 
+			 print "delete $fullname\n";
+			 $dry or do {
+			    $ftp->delete($fullname);
+			    $del_tot++;
+			    $debug and print dump_ftp($ftp);
+			    if($ftp->ok()) {
+				    $del_good++;
+			    }else{
+				    $del_bad++;
+			    }
+			 };
+		}else{
+			$debug and print 
+				"$fullname is a directory\n";
+			$debug and print "test $localname\n";
+			if (-e $localname){
+				$debug and print "$localname exists\n";
+				#next;
+			}
+			sync_delete($fullname);
+		}
+	}
+	if (-e $localFile){
+		$debug and print "$localFile exists\n";
+		return;
+	}
+	print "rmdir $dir\n";
+        $dry or do { 
+		$ftp->rmdir($dir);
+		$rmdir_tot++;
+		$debug and print dump_ftp($ftp);
+		if ($ftp->ok()) {
+			$rmdir_good++;
+		}else{
+			$rmdir_bad++;
+		}
+	};
+}
+
+
+sub  extractTheFirstLine {
+
+	# extract the first line of a file (without \n)
+
+        my($file) = @_;
+        my($line);
+	
+        open FILE, $file or die("$! $file");
+        chomp($line = <FILE>);
+        close FILE;
+        $line = ($line) ? $line : "!EMPTY! $file";
+        return $line;   
+}
+
+sub extractList {
+
+	my($file) = @_;
+	my %list;
+	open FILE, $file or die("$! $file");
+	while (my $item = <FILE>) {
+		chomp($item);
+		$list{$item} = 1;
+	}
+	return %list;
+}
+
+
+sub get_options
+{
+	my $opt_ret = GetOptions(
+				   "debug"      => \$debug,
+				   "debugftp"   => \$debugftp,
+				   "host=s"     => \$host,
+				   "port=i"     => \$port,
+				   "user=s"     => \$user,
+				   "password=s" => \$password,
+				   "passfile=s" => \$passfile,
+				   "pattern=s"  => \$pattern,
+				   "excludelist=s" => \$excludelist,
+				   "hash"       => \$hash,
+				   "force"      => \$force,
+				   "delete!"    => \$delete,
+				   "recursive!" => \$recursive,
+				   "dry"        => \$dry,
+				   "del=s@"     => \@deltree,
+				   "version"    => \$version,
+				   "help"       => \$help,
+				   "stat!"      => \$stat,
+				   "sizeonly!"  => \$sizeonly,
+				  );
+	  
+	$debug and print "get options: [$opt_ret]\n";
+	print "$VERSION\n" and exit if ($version) ;
+	usage() and exit if ($help) ;
+	usage() and exit unless ($opt_ret) ;
+	unless(@deltree)
+	{
+		$src  = shift(@ARGV) or usage() and exit;
+		$dest = shift(@ARGV) or usage() and exit;
+		$debug and print "src: [$src]\n";
+		if ($dest =~ m|ftp://(.*?)/+(.*)| ) {
+		    	# uri style for destination
+			$host = "$1";
+			$dest = "/$2"; # yes, absolute is implied !
+			$debug and print "uri: [$1]/[$2]\n";
+		}elsif ($dest =~ m|ftp://([^/]+)$|) {
+		    	# no "/" in destination
+			$debug and print "uri: [$1]\n";
+			$host = "$1";
+			$dest = "/"; # root directory on remote host
+		}
+	}
+}
+
+sub usage {
+	print <<EOF;
+
+usage: $0 [options] SOURCE DESTINATION
+
+SOURCE      is a local  directory
+DESTINATION is a remote directory or an ftp URI (see example).
+
+--host       <string>  : Host to contact. Mandatory unless URI used.
+--port       <int>     : Port to connect. Default is 21.
+--user       <string>  : User to login.   Default is anonymous.
+--password   <string>  : Password for the user. Dangerous, use --passfile
+--passfile   <string>  : Password file for the user. contains the password.
+--pattern    <string>  : Update only files that matches regex pattern.
+                         default is '.*' 
+			 It is a classical perl regular expression matching
+			 the whole local file name. Ex1: '.*\.html\$'
+			 to update only files ending with extention .html
+                         Ex2: '^.*/[^/.][^/]+$' 
+                         to avoid files starting with a dot "."
+--excludelist <file>   : File contains a list of files or directory
+                         to be excluded from transfert.
+--hash                 : Print hash marks (\#) on STDERR every 1024 bytes.
+--force                : Force update.
+--delete               : Delete files and directories on the remote host 
+                         that have been  deleted from the source directory.
+			 norecursive option is ignored when removing, 
+			 so be careful.
+--sizeonly             : Do not use the timestamp of files, only the size.
+--norecursive          : Do not recurse (one directory depth).
+--dry                  : Do nothing, just print what would be done.
+--nostat               : Do not print stats at the end.
+--debug                : Debug mode.
+--debugftp             : ftp debug mode.
+--version              : Print sotfware version.
+
+Example: to copy recursively directory d1/ on remote ftp server ftp.foo.org:
+
+$0 --user bob --passfile /etc/secret \\
+         dir1 ftp://ftp.foo.org/pub/mystuff
+
+Then, you will have /pub/mystuff/dir1/ on the remote server.
+
+$rcs
+      ftpsync copyleft is the GNU General Public License.
+EOF
+}
+

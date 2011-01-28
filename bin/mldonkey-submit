@@ -1,0 +1,16 @@
+#!/usr/bin/env ruby
+
+require 'cgi'
+CMD = 'wget  -O- http://tie:4080/submit?q=dllink%20%file% 1> /dev/null'
+FILE = ARGV.to_s
+
+`#{CMD.gsub(/%file%/, CGI.escape(FILE))}`
+
+# File.open(File.expand_path('~/.osd'), 'w') do |fifo|
+#   fifo.puts("OK, added: %s"%FILE)
+# end
+
+
+
+
+

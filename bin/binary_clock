@@ -1,0 +1,19 @@
+#!/usr/bin/env ruby
+=begin
+  12:15:22
+6  o  o  o
+4  o o0 oo
+2 o0 oo 00
+1 0o 00 oo
+=end
+
+$stdout.sync = true
+loop do 
+  str = Time.now.strftime('%H %M %S').split.map{|t|
+    t.split('').map{|c|
+      c.to_i.to_s(2).rjust(8, '0').split('').reverse[0,4].map{|c| c == '1' ? '0' : 'o' }
+    }.join('')
+  }.join(':')
+  print str; sleep 1
+  print "\b" * str.size
+end

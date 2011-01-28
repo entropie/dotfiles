@@ -1,0 +1,3 @@
+#!/bin/sh
+  X -layout tv :1 -ac & sleep 1 ; DISPLAY=:1 fluxbox ; DISPLAY=:1 /usr/bin/vncserver
+

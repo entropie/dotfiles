@@ -1,0 +1,3 @@
+#!/bin/sh
+
+X -layout lgl :1 & sleep 1; DISPLAY=:1 nice -n 15 wine ~/Games/scbw/starcraft.exe

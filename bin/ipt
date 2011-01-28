@@ -1,0 +1,108 @@
+# -*- mode: sh -*-
+
+export LOGLIMIT="30/m"
+export LOGLIMITBURST="10"
+export LAN=eth0
+export WAN=eth1
+export NIL=10.0.187.23
+
+modprobe ipt_LOG
+modprobe ipt_TCPMSS
+modprobe ip_conntrack
+modprobe ipt_limit
+modprobe ipt_LOG
+
+echo "flushing tables"
+iptables -F
+iptables -t nat -F
+
+iptables -P INPUT ACCEPT
+iptables -P OUTPUT ACCEPT
+iptables -P FORWARD DROP
+
+iptables -I INPUT 1 -i ${LAN} -j ACCEPT
+iptables -I INPUT 1 -i lo -j ACCEPT
+
+
+echo "redirect requests to *:80 to squid"
+iptables -t nat -A PREROUTING -i eth0 -p tcp --dport 80 -j REDIRECT --to-port 3128
+
+for i in 67 53; do
+    echo "reject ${i}"
+    iptables -A INPUT -p UDP --dport ${i} -i ! ${LAN} -j DROP
+    iptables -A INPUT -p TCP --dport ${i} -i ! ${LAN} -j DROP
+done
+
+# Accept some services
+for i in 22 80 443 1234; do
+    echo "accept ${i}"
+    iptables -A INPUT -p TCP --dport ${i} -i ${WAN} -j ACCEPT
+    iptables -A INPUT -p UDP --dport ${i} -i ${WAN} -j ACCEPT
+done
+
+# forward http(s) to NIL
+for i in 80 443; do
+    echo "forward ${i} to ${NIL}:${i}"
+    iptables -A PREROUTING -t nat -p tcp --dport ${i} -i $WAN -j DNAT --to-destination ${NIL}:${i}
+    iptables -A FORWARD -i ${WAN} -m state --state RELATED,ESTABLISHED -p tcp -s 0/0 -d ${NIL} --dport ${i} -j ACCEPT
+done
+
+# forward port 23000 to nil:22
+echo "forward 23000 to ${NIL}:22"
+iptables -A PREROUTING -t nat -p tcp --dport 23000 -i $WAN -j DNAT --to-destination ${NIL}:22
+iptables -A FORWARD -i ${WAN} -m state --state RELATED,ESTABLISHED -p tcp -s 0/0 -d ${NIL} --dport 23000 -j ACCEPT
+
+# 23005-23009
+for i in `seq 23001 23010`; do
+    echo "forward ${i} to ${NIL}:${i}"
+    iptables -A PREROUTING -t nat -p tcp --dport ${i} -i $WAN -j DNAT --to-destination ${NIL}:${i}
+    iptables -A FORWARD -i ${WAN} -m state --state RELATED,ESTABLISHED -p tcp -s 0/0 -d ${NIL} --dport ${i} -j ACCEPT
+done
+
+# drop nearly everything
+echo "dropping 0:1024"
+iptables -A INPUT -p TCP -i ! ${LAN} -d 0/0 --dport 0:1024 -j DROP
+iptables -A INPUT -p UDP -i ! ${LAN} -d 0/0 --dport 0:1024 -j DROP
+
+for i in 1544 2049 3000 3632 4000 4001 4080 6667 6881 6882 7666; do
+    echo "reject ${i}"
+    iptables -A INPUT -p TCP --dport ${i} -i ! ${LAN} -j DROP
+    iptables -A INPUT -p UDP --dport ${i} -i ! ${LAN} -j DROP
+done
+
+
+# tv.spamt.net
+iptables -t nat -A PREROUTING -p tcp --dport 1234 -j DNAT --to-destination $NIL
+iptables -t nat -A POSTROUTING -p tcp -d $NIL --dport 1234 -j SNAT --to-source 137.226.111.239
+
+MASK="10.0.187.0/255.255.0.0"
+
+# forwarding
+echo "forward and masquerading${MASK} to localnet"
+iptables -I FORWARD -i ${LAN} -d ${MASK} -j DROP
+iptables -A FORWARD -i ${LAN} -s ${MASK} -j ACCEPT
+iptables -A FORWARD -i ${WAN} -d ${MASK} -j ACCEPT
+iptables -t nat -A POSTROUTING -o ${WAN} -j MASQUERADE
+
+
+#
+# Loggin
+#
+
+# iptables -X LOGDROP 2> /dev/null
+# iptables -N LOGDROP
+
+# iptables -A LOGDROP -p icmp -m limit --limit $LOGLIMIT --limit-burst $LOGLIMITBURST -j LOG --log-prefix "ICMP LOGDROP: "
+# iptables -A LOGDROP -f -m limit --limit $LOGLIMIT --limit-burst $LOGLIMITBURST -j LOG --log-prefix "FRAGMENT LOGDROP: "
+# iptables -A LOGDROP -j DROP
+
+
+# iptables -A INPUT -p icmp -i eth1 -j LOGDROP
+# iptables -A INPUT -p tcp -i eth1 -j LOGDROP
+# iptables -A INPUT -p udp -i eth1 -j LOGDROP
+
+
+
+echo 1 > /proc/sys/net/ipv4/ip_forward
+#for f in /proc/sys/net/ipv4/conf/*/rp_filter ; do echo 1 > $f ; done
+

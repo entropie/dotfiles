@@ -1,0 +1,44 @@
+#!/usr/bin/env ruby
+#
+#
+# Author:  Michael 'entropie' Trommer <mictro@gmail.com>
+#
+
+url = ARGV.join
+url = ENV['HOMEPAGE'] if url.empty?
+
+url = ("http://" + url) if url !~ /https?:\/\//
+
+BROWSER = 'firefox'
+
+unless url.empty?
+  case BROWSER
+  when 'opera'
+    system(a="opera -remote \"openURL(#{ARGV.join}, background-page)\" & disown")
+  when 'konqueror'
+    pid = `dcop | grep konqueror | sed 's/konqueror-//' | tail -n 1`.strip
+    unless pid.empty?
+      `dcop konqueror-\"#{pid}\" konqueror-mainwindow#1 newTab \"#{url}\"`
+    else
+      `konqueror #{pid} &>/dev/null &`
+    end
+  when 'firefox'
+    if `uname` == "Darwin\n"
+      p url
+      `open #{url}`
+    else
+      system(a="firefox -remote 'openURL("+url+", new-tab)' " +
+             "1> /dev/null 2>/dev/null ||firefox \"#{url}\" & disown")
+    end
+  end
+end
+
+
+=begin
+Local Variables:
+  mode:ruby
+  fill-column:70
+  indent-tabs-mode:nil
+  ruby-indent-level:2
+End:
+=end

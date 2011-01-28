@@ -1,0 +1,5 @@
+#!/bin/sh
+
+mount_nfs -P 10.0.187.42:/home/ftp/pub/music sshfs/music
+~/.cpan/build/Music-Audioscrobbler-MPD-0.13/bin/musicmpdscrobble -d
+mpd

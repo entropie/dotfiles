@@ -1,0 +1,12 @@
+#!/usr/bin/env ruby
+
+
+require "/Users/mit/Source/IRF/lib/hamlizer.rb"
+
+target = ARGV.shift or raise "need target directory"
+target = File.expand_path(target)
+
+IRF::Hamlizer.new(ARGV, :quiet => false) {
+  hamlize(target)
+}.start
+

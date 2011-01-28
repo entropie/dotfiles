@@ -1,0 +1,8 @@
+#!/usr/bin/env ruby
+
+Dir["#{ENV['HOME']}/.bg/*"].sort.each do |bgfile|
+  tdisplay = File.basename(bgfile).scan(/(\d)\./).flatten.join
+  ENV['DISPLAY'] = ":0.#{tdisplay}"
+  system "/usr/bin/feh --bg-scale %s" % [bgfile]
+end
+

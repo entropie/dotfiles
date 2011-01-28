@@ -1,0 +1,4 @@
+#!/bin/sh
+ls /home/ftp/pub/movies/ /home/tie/ftp/inc/fromMule/ 
+ls /home/ftp/pub/movies2 -R
+ls /home/tie/p2p/mldonkey/incoming/* -R

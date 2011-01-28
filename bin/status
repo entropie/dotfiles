@@ -1,0 +1,10 @@
+#!/bin/sh
+    while true ; do
+        au=`date +"%H.%M %a %b %d"`
+        uk=`TZ=GMT date +"JP %H.%M"`
+        ca=`TZ=America/Los_Angeles date +"SF %H.%M"`
+        ut=`uptime | sed 's/.*://; s/,//g'`
+        printf "%s | %s | %s |%s\n" "$au" "$uk" "$ca" "$ut"
+        sleep 1
+    done
+

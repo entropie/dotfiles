@@ -1,0 +1,26 @@
+#!/bin/sh
+
+#[[ -f /dev/xconsole ]] || ( sudo mkfifo /dev/xconsole; sudo chmod 644 /dev/xconsole chown root.tty /dev/xconsole; sudo /etc/init.d/syslog-ng restart & )
+
+if [[ $DISPLAY == :0 || $DISPLAY == :0.0 ]]; then
+    xscreensaver &
+    xosdfifo.rb --display 0.0 &
+    #killall lineakd; lineakd &
+    xrate &
+    #feh --bg-scale ~/.bg/xin_bak.bg
+    mpc-xosd '#888888' &
+    xbindkeys &
+    xmodmap ~/.xmodmaprc &
+    #beagled --replace
+    #xmobar ~/.xmobar.rc &
+    #xm_clock &
+    #killall scmpc; scmpc &
+    killall fastri-server; fastri-server &
+    kicker &
+    gmpc --start-hidden &
+else
+    feh --bg-scale ~/.bg/bg1.jpg
+    #mpc-xosd &
+    killall lineakd; lineakd &
+fi
+

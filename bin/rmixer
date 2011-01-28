@@ -1,0 +1,113 @@
+#!/usr/bin/env ruby
+
+E_NO_ARGS = 32
+E_WRONG_ARGCNT = 33
+E_ARG_ERR = 34
+E_WRONG_CTRL = 50 
+E_WRONG_AAAARG = 51
+E_PERMERR = 23
+
+
+MIN_ARGV_SIZE = 2
+CARDCNT = 2
+
+ALLOWED_CMDARGS = [
+                   [ 'all', 'both', '1', '2' ],
+                   [ 'up', 'down', /^([\+\-]?)([0-9]+)$/ ]
+                  ]
+
+AFILE = '/home/mit/Tmp/alsa'
+
+EEND = ' >%s'
+CNTRL = 'PCM'
+
+# Kernel.sprintf
+GETVOL = 'amixer -c %i sget PCM,0'
+SETVOL = 'amixer -c {CARD} sset '+CNTRL+',0 %s,%s'
+
+
+def getVol(dev)
+  balanced,ret = true,[]
+  oldchan,cur = nil,nil
+  
+  Kernel.system(sprintf(GETVOL + EEND, dev, AFILE))
+
+  File.new(AFILE).each do |fl|
+    if fl =~ /^  Front.*\[([0-9]{1,3})\%\].*/
+      cur = $1
+      STDERR.puts "warning, different chan volumes :[left|right]#{oldchan}|#{cur}" if oldchan && oldchan != cur
+      oldchan,balanced = cur,false
+    end
+  end
+
+  return [oldchan.to_i, cur.to_i] if oldchan && cur
+  false
+end
+
+def newVol(iarr, cv, op)
+  0.upto(iarr.size-1) do |i|
+    if op == '+'
+      iarr[i]+=cv
+    elsif op == '-'
+      iarr[i]-=cv
+    else
+      $STDERR.puts "dunno whats todo"
+    end
+  end
+
+  0.upto(iarr.size-1) do |i|
+    if iarr[i] < 0
+      iarr[i] = 0
+    elsif iarr[i] > 100
+      iarr[i] = 100
+    end
+  end
+  
+  iarr
+end
+
+def setVol(str, opt)
+  cards = Array.new(CARDCNT, false)
+  @currCard = false
+  case str
+  when 'both', 'all'
+    cards = Array.new(CARDCNT, true)
+    
+    @currCard = true
+  when /^([0-9])$/
+    cards[($1.to_i)-1] = true
+    @currCard = ($1.to_i)-1
+  end
+
+  case opt
+  when /^([\+\-])?[0-9]+$/
+    op = $1
+    0.upto(cards.size-1) do |x|
+      next unless cards[x]
+      nv = newVol(getVol(x), opt[1..(opt.size-1)].to_i, op)
+      nv[0],nv[1]=nv[0].to_s+'%',nv[1].to_s+'%'
+      cards[x] = sprintf(SETVOL.gsub(/\{CARD\}/, x.to_s),nv[0],nv[1])
+      Kernel.system(cards[x])
+      puts cards[x]
+    end
+  end
+
+  
+end
+
+
+exit E_NO_ARGS if ARGV.size == 0
+exit E_WRONG_ARGCNT if ARGV.size < MIN_ARGV_SIZE
+
+
+ok = Array.new(MIN_ARGV_SIZE, false) # we're really local ...
+
+0.upto(ARGV.size-1) do |i|
+  ALLOWED_CMDARGS[i].each do |aa|
+    aa = Regexp.new(aa) if aa.class == String
+    ok[i] = true if ARGV[i] =~ aa
+  end
+end
+ok.each do |x| exit E_ARG_ERR unless x; end
+
+setVol(ARGV[0],ARGV[1])

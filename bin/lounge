@@ -1,0 +1,3 @@
+#!/bin/sh
+
+mplayer -quiet -really-quiet -ao alsa:noblock:device=hw=0.0 mms://stream.green.ch/lounge-radio

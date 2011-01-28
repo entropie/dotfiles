@@ -1,0 +1,14 @@
+#!/bin/sh
+
+FILE=$1
+
+if [[ -z $FILE ]]; then
+    emacsclient -s mit -c
+else
+    emacsclient -s mit -c "$@"
+fi
+
+# if [ $FILE[0] != "/" -o $FILE[0] = "~" ]
+# then
+#     FILE="$PWD/$FILE"
+# fi

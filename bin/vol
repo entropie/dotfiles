@@ -1,0 +1,26 @@
+#!/usr/bin/env ruby
+
+# -*- mode: ruby -*-
+
+Colors = if ARGV.first == '-c' and r = ARGV.shift then r else false end
+Format = if ARGV.size == 2 then ARGV else ['L:%s', 'R:%s'] end
+
+Levels = {
+  100 => '#AF3C34',
+  66 => '#E78730',
+  33 => '#1F7400',
+  0  => '#BDBDBD',
+}
+
+puts open(File.expand_path('~/Tmp/alsa')).readlines.grep(/^\s+Front /).map { |vl|
+  ret = Format.shift % vl.scan(/\[(\d\d\d?)%\]/)
+  v = $1
+  if v and Colors
+    k = Levels.keys.sort.reverse.select{ |i| i >= $1.to_i }.last
+    ret.gsub!(/(#{v})/, "<fc=#{Levels[k]}>#{v}</fc>")
+    ret
+  else
+    ret
+  end
+}.flatten.join(' ')
+

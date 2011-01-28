@@ -1,0 +1,11 @@
+#!/usr/bin/env ruby
+
+BurnCommand = %(/usr/bin/growisofs -Z /dev/hdb=%iso% -use-the-force-luke=notray -use-the-force-luke=tty -dvd-compat -speed=2 -overburn -use-the-force-luke=bufsize:32m)
+
+begin puts "need path to isofile"; exit 23 end if ARGV.empty?
+
+def burn(what)
+  raise "lol?" unless File.exist?(what)
+  `#{BurnCommand.gsub(/%iso%/, what)}`
+end
+burn(ARGV.first)

@@ -1,0 +1,23 @@
+#!/usr/bin/env ruby
+
+require 'net/smtp'
+
+to = ARGV.shift
+to = 'mit@particle.enti.ty' if not to or to.empty?
+subject = ARGV.shift
+subject = 'none' if not subject or subject.empty?
+
+bdy = ARGF.readlines.join
+from='mictro@gmail.com'
+
+body = <<EOT
+From: Michael 'mictro' Trommer <mictro@gmail.com>
+To: #{to}
+Subject: #{subject}
+
+#{bdy}
+#{File.readlines(File.expand_path('~/.signature')).join.strip}
+EOT
+Net::SMTP.start('tie', 25){|s| 
+    s.send_message(body, from, to) 
+}

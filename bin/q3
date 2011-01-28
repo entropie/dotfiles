@@ -1,0 +1,3 @@
+#!/bin/sh
+
+winex3 ./Games/quake3/quake3.exe

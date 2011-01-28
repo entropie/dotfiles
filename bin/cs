@@ -1,0 +1,3 @@
+#!/bin/bash
+cd ~/.wine/drive_c/Program\ Files/Steam/
+wine Steam.exe -fullscreen -width 640 -height 480 -applaunch 220 -heapsize 512000 +map_background none

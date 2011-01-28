@@ -1,0 +1,6 @@
+#!/usr/bin/env ruby
+
+ARGV << 10 if ARGV.size == 0
+
+system "echo 'mpc stop' | at now + #{time = ARGV.join} minutes"
+system "echo 'quiet in #{time} minutes -- later' > ~/.osd"

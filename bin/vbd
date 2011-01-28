@@ -1,0 +1,34 @@
+#!/usr/bin/env ruby
+#
+# $Id: vbd 91 2007-03-20 02:49:30Z entropie $
+#
+# Author:  Michael 'entropie' Trommer <mictro@gmail.com>
+
+$: << File.expand_path('~/.ruby/')
+
+require "chronos"
+require "term/ansicolor"
+
+class String
+  include Term::ANSIColor
+end
+
+ts = [:years, :months, :weeks, :days, :hours]
+
+name, birthsday =
+  if ARGV.to_s == 'davie'
+    ['Davie', Chronos::Datetime.civil(1999, 9, 14)]
+  elsif ARGV.to_s == 'zeus'
+    ['Zeus',  Chronos::Datetime.civil(2000, 3, 14)]
+  elsif ARGV.to_s == 'lea'
+    ['Lea',   Chronos::Datetime.civil(2006, 7, 21)]
+  else
+    ['Void',  Chronos::Datetime.civil(2006, 10, 7)]
+  end
+
+interval  = Chronos::Datetime.today - birthsday
+
+puts "Age of #{name}:".bold
+ts.each do |t|
+  puts "  %-20s %s" % [t.to_s.capitalize.green+":", interval.send(t).floor.to_s.cyan]
+end

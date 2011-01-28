@@ -1,0 +1,7 @@
+#!/bin/sh
+
+
+xclip -o | xclip -i -selection secondary
+echo -n "http://www.srcf.ucam.org/~hmw26/" | xclip
+xsendkeys Shift_L+Insert
+xclip -o -selection secondary | xclip -i
