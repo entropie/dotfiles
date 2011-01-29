@@ -591,6 +591,7 @@ When called with a prefix argument, show the *trace-output* buffer."
     (shell-command-on-region start end (concat "qp -d" " ") t))
   (fill-region start end))
 
+
 (defun mt-nopaste-region-to-file (start end)
   "Save current region in a temporarily file and return the filename as string"
   (let ((filename (make-temp-file "/tmp/nopaste")))
@@ -601,10 +602,13 @@ When called with a prefix argument, show the *trace-output* buffer."
     (kill-buffer (substring filename 5))
     filename))
 
+
 (defun mt-nopaste-send (file)
-  (message (concat "pasting with " nopaste-facility))
-  (kill-new
-   (shell-command-to-string (concat nopaste-facility " " file))))
+  (shell-command-to-string
+   (concat 
+    "cat " file " | " 
+    nopaste-facility " -f " (car (last (split-string buffer-file-name "\\/")))
+    " > ~/.lastpaste")))
 
 (defun mt-nopaste-region (start end)
   "Send the current region to nopaste"
@@ -616,8 +620,9 @@ When called with a prefix argument, show the *trace-output* buffer."
   "Insert last paste url from ~/.lastpste"
   (interactive)
   (save-excursion
-    (insert-file-literally "/Users/mit/.lastpste"))
+    (insert-file-literally "~/.lastpaste"))
   (goto-char (point-at-eol)))
+
 
 (defun mt-kill-file-and-buffer ()
   "Removes file associated to current buffer."
@@ -625,6 +630,7 @@ When called with a prefix argument, show the *trace-output* buffer."
   (when (y-or-n-p (concat "Delete " buffer-file-name "? "))
     (delete-file (buffer-file-name))
     (kill-buffer nil)))
+
 
 (defun mt-insert-ackro-post-skel (comp)
   "Insert what we're playing right now."
