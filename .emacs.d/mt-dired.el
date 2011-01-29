@@ -37,7 +37,7 @@
      (apply #'define-key dired-mode-map mapping))
    `((,(kbd "C-x p") emms-play-dired)
      (,(kbd "C-x e") emms-add-dired)
-     (,(kbd "^")  (lambda nil (interactive) (joc-dired-single-buffer "..")))
+     (,(kbd "C-p")  (lambda nil (interactive) (joc-dired-single-buffer "..")))
      (,(kbd "RET") joc-dired-single-buffer)
      (,(kbd "C-s")   dired-isearch-forward)
      (,(kbd "C-r")   dired-isearch-backward)
