@@ -26,7 +26,7 @@
 
 (set-default 'truncate-1lines t)
 (setq 
- nopaste-facility   "/home/mit/bin/rapaste"
+ nopaste-facility   "~/bin/gist"
  mt-is-default-font t
  ;;mt-default-font     "-*-terminus-medium-*-*-*-20-*-*-*-*-*-*-*"
  mt-default-font     "-*-Monaco-normal-r-*-*-12-102-120-120-c-*-iso8859-1"
@@ -39,6 +39,8 @@
 (require 'haskell-mode)
 (require 'mt-functions)
 
+
+(require 'cheat)
 (require 'bitlbee)
 (setq bitlbee-executable nil)
 
@@ -100,8 +102,10 @@
  x-stretch-cursor t
  mouse-yank-at-point t
  mouse-highlight 1
+ highlight-parentheses-mode 1
  )
 (add-hook 'before-save-hook 'time-stamp)
+
 
 (if (file-directory-p "~/.backup")
     (setq backup-directory-alist '(("." . "~/.backup")))
@@ -194,6 +198,7 @@
 (global-set-key (kbd "C-c b") 'browse-url)
 (global-set-key (kbd "C-c G") 'mt-google)
 (global-set-key (kbd "C-c B") 'browse-url-at-point)
+
 (global-set-key (kbd "C-t")   nil)
 
 (autoload 'bm-toggle "bm" "bm" t)
@@ -202,6 +207,7 @@
 
 (global-set-key (kbd "M-,")   'ispell-complete-word)
 (global-set-key (kbd "C-t d") 'mt-dict-cc)
+(global-set-key (kbd "C-t D") 'google-define)
 (global-set-key (kbd "C-t t") 'bm-toggle)
 
 (global-set-key (kbd "C-t n") 'bm-next)
@@ -209,6 +215,7 @@
 (global-set-key (kbd "C-t P") 'mt-nopaste-region)
 (global-set-key (kbd "C-t c") 'bm-remove-all)
 (global-set-key (kbd "C-t i") 'irc)
+(global-set-key (kbd "C-t C") 'cheat)
 
 (global-set-key (kbd "C-t h") 'highline-local-mode)
 (global-set-key (kbd "C-t H") 'highlight-changes-mode)
@@ -394,6 +401,10 @@
 
 
 (require 'mt-dired)
+(require 'google-define)
+
+;; (require 'gist)
+
 
 (require 'mt-ruby)
 (autoload 'ri "/home/mit/.emacs.d/ri-ruby.el" nil t)
