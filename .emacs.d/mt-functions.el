@@ -664,6 +664,19 @@ When called with a prefix argument, show the *trace-output* buffer."
       (kill-new new-kill-string))))
 
 
+;; vi-like % case toggling
+;; 09dec2006  +chris+
+(defun mt-toggle-case ()
+  (interactive)
+  (let ((char (following-char)))
+    (if (eq char (upcase char))
+        (insert-char (downcase char) 1 t)
+      (insert-char (upcase char) 1 t)))
+  (delete-char 1 nil)
+  (backward-char))
+(global-set-key (kbd "M-#") 'chris2-toggle-case)
+
+
 ;;08.04.2003: Kai Großjohann
 ;;2008-03-17: Michael 'mictro' Trommer <mictro@gmail.com>, use prefix
 (defun mt-increment-number-at-point (amount)
