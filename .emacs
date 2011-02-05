@@ -22,6 +22,8 @@
   (add-to-list 'load-path "~/.emacs.d/color-theme/"))
 (when (file-directory-p "~/.emacs.d/ruby-mode/")
   (add-to-list 'load-path "~/.emacs.d/ruby-mode/"))
+(when (file-directory-p "~/.emacs.d/emacs-goodies/")
+  (add-to-list 'load-path "~/.emacs.d/emacs-goodies//"))
 
 
 ;;(require 'magit)
@@ -32,11 +34,11 @@
 (add-hook 'clojure-mode-hook 'lisp-enable-paredit-hook)
 
 
-(add-to-list 'load-path
-             "~/.emacs.d/yasnipped")
-(require 'yasnippet)
-(yas/initialize)
-(yas/load-directory "~/.emacs.d/yasnipped/snippets")
+;; (add-to-list 'load-path
+;;              "~/.emacs.d/yasnipped")
+;; (require 'yasnippet)
+;; (yas/initialize)
+;; (yas/load-directory "~/.emacs.d/yasnipped/snippets")
 
 
 (add-to-list 'load-path "~/.emacs.d/flog/")
@@ -512,6 +514,7 @@
 (load "color-theme-nox.el")
 
 (require 'modeline-posn)
+(require 'minimap)
 
 (add-hook 'after-make-frame-functions
           (lambda (frame)
