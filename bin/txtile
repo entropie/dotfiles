@@ -1,0 +1,18 @@
+#!/usr/bin/env ruby
+# -*- mode:ruby -*-
+
+require "rubygems"
+require "redcloth"
+require "pp"
+
+contents =
+  if filen = ARGV.first and File.exist?(file = File.expand_path(filen))
+    File.readlines(file).join
+  else
+    $stdin.read
+  end
+
+rc = RedCloth.new(contents)
+rc.hard_breaks = false
+puts rc.to_html
+
