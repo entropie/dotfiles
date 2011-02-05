@@ -123,7 +123,7 @@
       (set-face-font 'default mt-default-font)
       (setq mt-is-default-font t)))
   (mt-setup-frame))
-  
+
 (defun mt-setup-frame-nox ()
   (interactive)
   (message "no X")
@@ -138,7 +138,7 @@
   (when arg
     (load "color-theme-dd")
     (color-theme-dd)))
-    
+
 (defun mt-line-comment-and-duplicate()
   "Comment a line and duplicate it."
   (interactive)
@@ -226,11 +226,11 @@ instead."
   (auto-fill-mode 0)
   (set-fill-column 66)
   (flyspell-mode 1)
-   (lambda (mapping) 
-     (apply #'define-key mew-draft-mode-map mapping))
-   `(
-     (,(kbd "C-c i") mt-quoted-insert-file)
-     ))
+  (lambda (mapping) 
+    (apply #'define-key mew-draft-mode-map mapping))
+  `(
+    (,(kbd "C-c i") mt-quoted-insert-file)
+    ))
 
 (defun mt-mail-mail-setup ()
   (turn-on-auto-fill)
@@ -393,7 +393,7 @@ set to that number."
   ;;    (apply #'define-key howm-mode-map mapping))
   ;;  `((,(kbd "RET") haml-indent-line)
   ;;    ))
-)
+  )
 
 
 (defun mt-html-setup ()
@@ -487,7 +487,7 @@ set to that number."
   (let ((isearch-regexp nil)) ;; Dynamic binding of global.
     (isearch-yank-string regexp))
   (isearch-search-and-update))
-  
+
 (defun isearch-yank-symbol (&optional partialp)
   "Put symbol at current point into search string.
   
@@ -508,7 +508,7 @@ set to that number."
           (isearch-yank-string sym)
         (isearch-yank-regexp
          (concat "\\_<" (regexp-quote sym) "\\_>"))))))
-  
+
 (defun isearch-current-symbol (&optional partialp)
   "Incremental search forward with symbol under point.
   
@@ -518,7 +518,7 @@ set to that number."
   (let ((start (point)))
     (isearch-forward-regexp nil 1)
     (isearch-yank-symbol partialp)))
-  
+
 ;; by xsteve
 (defun mt-show-message-buffer (arg)
   "Show the *message* buffer.
@@ -553,14 +553,14 @@ When called with a prefix argument, show the *trace-output* buffer."
 ;; 10.12.2001; xsteve
 ;; 17.03.2008; Michael 'mictro' Trommer <mictro@gmail.com>, Nato (international code)
 (setq nato-alphabet
-'(("A" . "Alfa") ("B" . "Bravo") ("C" . "Charlie") ("D" . "Delta") ("E" . "Echo")
-  ("F" . "Foxtrot") ("G" . "Golf") ("H" . "Hotel") ("I" . "India") ("J" . "Juliet")
-  ("K" . "Kilo") ("L" . "Lima") ("M" . "Mike") ("N" . "November") ("O" . "Oscar")
-  ("P" . "Papa") ("Q" . "Quebec") ("R" . "Romeo") ("S" . "Sierra") ("T" . "Tango")
-  ("U" . "Uniform") ("V" . "Victor") ("W" . "Whiskey") ("X" . "Xray")
-  ("Y" . "Yankee") ("Z" . "Zulu") ("1" . "One") ("2" . "Two") ("3" . "Three") 
-  ("4" . "Four") ("5" . "Five") ("6" . "Six") ("7" . "Seven") ("8" . "Eight")
-  ("9" . "Nine") ("0" . "Zero") (" " . "_")))
+      '(("A" . "Alfa") ("B" . "Bravo") ("C" . "Charlie") ("D" . "Delta") ("E" . "Echo")
+        ("F" . "Foxtrot") ("G" . "Golf") ("H" . "Hotel") ("I" . "India") ("J" . "Juliet")
+        ("K" . "Kilo") ("L" . "Lima") ("M" . "Mike") ("N" . "November") ("O" . "Oscar")
+        ("P" . "Papa") ("Q" . "Quebec") ("R" . "Romeo") ("S" . "Sierra") ("T" . "Tango")
+        ("U" . "Uniform") ("V" . "Victor") ("W" . "Whiskey") ("X" . "Xray")
+        ("Y" . "Yankee") ("Z" . "Zulu") ("1" . "One") ("2" . "Two") ("3" . "Three") 
+        ("4" . "Four") ("5" . "Five") ("6" . "Six") ("7" . "Seven") ("8" . "Eight")
+        ("9" . "Nine") ("0" . "Zero") (" " . "_")))
 
 ;; 10.12.2001; xsteve
 ;; 17.03.2008; Michael 'mictro' Trommer <mictro@gmail.com>, use region
@@ -646,7 +646,7 @@ When called with a prefix argument, show the *trace-output* buffer."
 (defun mt-copy-buffer-file-name-as-kill(choice)
   "Copy the buffer-file-name to the kill-ring"
   (interactive "cCopy BufferName (f)ull, (d)irectory, (n)ame, (w)ikiname or (q)uit?")
-  ;(message "your choice %c" choice)
+                                        ;(message "your choice %c" choice)
   (let ((new-kill-string)
         (name (if (eq major-mode 'dired-mode)
                   (dired-get-filename)
@@ -662,6 +662,15 @@ When called with a prefix argument, show the *trace-output* buffer."
     (when new-kill-string
       (message "%s copied" new-kill-string)
       (kill-new new-kill-string))))
+
+(defun minimap-toggle ()
+  "Show minimap if hidden, hide if present."
+  (interactive)
+  (if (and minimap-bufname
+           (get-buffer minimap-bufname)
+           (get-buffer-window (get-buffer minimap-bufname)))
+      (minimap-kill)
+    (minimap-create)))
 
 
 ;; vi-like % case toggling

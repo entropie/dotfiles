@@ -203,12 +203,12 @@ setprompt() {
             fellow*)
                 PROMPT='${PR_LIGHT_BLUE}%#$PR_NO_COLOUR ' ;;
             *)
-              PROMPT='${PR_LIGHT_WHITE}[ ${PR_CYAN}${COOL_PWD} $PR_NO_COLOUR${PR_LIGHT_WHITE}] $PR_WHITE%(!.$PR_RED.$PR_WHITE)%#$PR_NO_COLOUR ' ;;
+              PROMPT='${PR_LIGHT_WHITE}[ ${PR_CYAN}${COOL_PWD} $PR_NO_COLOUR${PR_LIGHT_WHITE}] $PR_WHITE%(!.$PR_RED.$PR_WHITE)∴$PR_NO_COLOUR ' ;;
         esac
         PS2='$PR_BLUE${}[$PR_LIGHT_GREEN%_$PR_BLUE${}]$PR_NO_COLOUR '
     else
     # emacs stuff
-        PROMPT='[%(?..%?:)%!%1(j.:%j.)][%(!.%S$HOSTNAME:u%s.$HOSTNAME):%(!..)%#] '
+        PROMPT='[%(?..%?:)%!%1(j.:%j.)][%(!.%S$HOSTNAME:u%s.$HOSTNAME):%(!..)%#]'
     fi
 
     [[ $TERM != "dumb" ]] && SPROMPT='$PR_BLUE${}[$PR_WHITE${}zsh$PR_BLUE][$PR_WHITE${}correct$PR_BLUE][$PR_LIGHT_RED${}%R$PR_BLUE]$PR_WHITE->$PR_BLUE${}[$PR_GREEN${}%r$PR_BLUE]$PR_WHITE?$PR_NO_COLOUR '

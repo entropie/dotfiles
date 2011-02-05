@@ -16,6 +16,30 @@
   (add-to-list 'load-path "~/.emacs.d/haskell-mode/"))
 (when (file-directory-p "~/.emacs.d/emacs-w3m/")
   (add-to-list 'load-path "~/.emacs.d/emacs-w3m/"))
+(when (file-directory-p "~/.emacs.d/magit/")
+  (add-to-list 'load-path "~/.emacs.d/magit/"))
+(when (file-directory-p "~/.emacs.d/color-theme/")
+  (add-to-list 'load-path "~/.emacs.d/color-theme/"))
+(when (file-directory-p "~/.emacs.d/ruby-mode/")
+  (add-to-list 'load-path "~/.emacs.d/ruby-mode/"))
+
+
+;;(require 'magit)
+
+(require 'paredit)
+(defun lisp-enable-paredit-hook () (paredit-mode 1))
+(require 'clojure-mode)
+(add-hook 'clojure-mode-hook 'lisp-enable-paredit-hook)
+
+
+(add-to-list 'load-path
+             "~/.emacs.d/yasnipped")
+(require 'yasnippet)
+(yas/initialize)
+(yas/load-directory "~/.emacs.d/yasnipped/snippets")
+
+
+(add-to-list 'load-path "~/.emacs.d/flog/")
 
 (require 'rainbow-mode)
 
@@ -79,7 +103,7 @@
 (setq-default 
  display-time-load-average   nil
  display-time-interval       30
- display-time-use-mail-icon  t
+ display-time-use-mail-icon  nil
  require-final-newline 1
  indent-tabs-mode nil
  default-major-mode 'text-mode
@@ -165,6 +189,8 @@
 (global-set-key (kbd "C-x <down>") 'windmove-down)
 (global-set-key (kbd "C-x <left>") 'windmove-left)
 (global-set-key (kbd "C-x <right>") 'windmove-right)
+(global-set-key (kbd "M-m ") 'minimap-toggle)
+(global-set-key (kbd "M-M ") 'minimap-kill)
 
 
 (require 'bs)
@@ -227,7 +253,9 @@
 (global-set-key (kbd "C-x i") 'mt-insert-userid)
 (global-set-key (kbd "C-x S") 'mt-insert-signature)
 
+
 (global-set-key (kbd "C-x E") 'mt-insert-excuse)
+(global-set-key (kbd "C-x p") 'mt-insert-mpd-np)
 
 (global-set-key (kbd "C-x a") 'abbrev-mode)
 (global-set-key (kbd "C-x F") 'mt-toggle-font)
@@ -241,7 +269,6 @@
 (define-key hs-minor-mode-map (kbd "C-c C-a") 'hs-show-all)
 (define-key hs-minor-mode-map (kbd "C-c C-h") 'hs-hide-all)
 (define-key hs-minor-mode-map (kbd "C-c C-l") 'hs-hide-level)
-
 
 (global-set-key (kbd "M-_") 'hippie-expand)
 (global-set-key (kbd "C-x *") 'isearch-current-symbol)
@@ -407,10 +434,10 @@
 
 
 (require 'mt-ruby)
-(autoload 'ri "/home/mit/.emacs.d/ri-ruby.el" nil t)
+(autoload 'ri "~/.emacs.d/ri-ruby.el" nil t)
 (autoload 'run-ruby "inf-ruby" "Run an inferior Ruby process")
 (autoload 'inf-ruby-keys "inf-ruby" "Set local key defs for inf-ruby in ruby-mode")
-(setq ri-ruby-script "/home/mit/.emacs.d/ri-emacs.rb")
+(setq ri-ruby-script "~/.emacs.d/ri-emacs.rb")
 (autoload 'ruby-electric-mode "ruby-electric" "ruby-electric")
 
 (require 'snippet)
@@ -450,7 +477,9 @@
                 ("\\.rbx$" . ruby-mode)
                 ("\\.hs$"  . haskell-mode)
                 ("\\.rd$"  . rd-mode)
-                ("\\.rdoc$"  . rd-mode))
+                ("\\.rdoc$"  . rd-mode)
+                ("\\.clj$"  . clojure-mode)
+                ("\\.howm$" . howm-mode))
               auto-mode-alist))
 
 
@@ -477,9 +506,10 @@
 (setq auto-insert-query nil)
 (define-auto-insert "\\.rb\\'"         "ruby")
 
-(load "color-theme.el")
-(load "color-theme-dd")
-(load "color-theme-pop")
+
+(require 'color-theme)
+(load "color-theme-bmate.el")
+(load "color-theme-nox.el")
 
 (require 'modeline-posn)
 
@@ -488,7 +518,7 @@
             (set-variable 'color-theme-is-global nil)
             (select-frame frame)
             (when window-system
-              (color-theme-pop))
+              (color-theme-bmate))
             (when (not window-system)
               (color-theme-nox))))
 
@@ -504,12 +534,11 @@
 
 (when window-system
   (set-face-font 'default mt-default-font)
-  (load "forx.el")
   (color-theme-initialize)
-  (color-theme-dd)
+  (color-theme-bmate)
   (setq favorite-color-themes
-        '((color-theme-dd)
-          (color-theme-pop)
+        '((color-theme-bmate)
+          (color-theme-dd)
           (color-theme-pop)))
   (setq x-select-enable-clipboard t
         interprogram-paste-function 'x-cut-buffer-or-selection-value))
@@ -543,9 +572,23 @@
 
 (autoload 'js2-mode "js2" nil t) 
 (add-to-list 'auto-mode-alist'("\\.js$" . js2-mode))
+
 (setq js2-basic-offset 2) 
 (setq js2-bounce-indent-p t) 
 (setq js2-use-font-lock-faces t)
+
+(setq js2-allow-keywords-as-property-names nil)
+(setq js2-auto-indent-p nil)
+(setq js2-basic-offset 0)
+(setq js2-bounce-indent-p t)
+(setq js2-cleanup-whitespace t)
+(setq js2-enter-indents-newline nil)
+(setq js2-global-externs (quote ("algjs" "$" "goog" "YAHOO" "jQuery")))
+(setq js2-highlight-level 3)
+(setq js2-idle-timer-delay 0.2)
+(setq js2-indent-on-enter-key nil)
+(setq js2-mirror-mode nil)
+
 
 (autoload 'rd-mode "rd-mode" nil t)
 

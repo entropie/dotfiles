@@ -3,6 +3,11 @@
 (defvar my-howm-buffer-name-limit 20)
 (defvar my-howm-buffer-name-total-limit my-howm-buffer-name-limit)
 
+(defun my-save-and-kill-buffer ()
+  (interactive)
+  (save-buffer)
+  (kill-buffer nil))
+
 (defun my-howm-truncate-string (string limit &optional dots-str)
   "Truncate STRING if it is longer than LIMIT.
 For example, \"1234567...\" is returned if string is \"123456789012\"
@@ -44,7 +49,10 @@ When DOTS is non-nil, it is used instead of \"...\"."
 
 
 (setq howm-directory "~/.howm")
-(define-key howm-mode-map (kbd "C-c , x") 'mt-kill-file-and-buffer)
+(define-key howm-mode-map (kbd "C-c , x") 'my-kill-file-and-buffer)
+(define-key howm-mode-map (kbd "C-c d") 'howm-insert-date)
+(define-key howm-mode-map (kbd "C-c D") 'howm-insert-dtime)
+(define-key howm-mode-map (kbd "C-c C-c") 'my-save-and-kill-buffer)
 
 (setq howm-content-from-region t)   
 (setq howm-title-from-search t)

@@ -12,9 +12,6 @@
 Recent
 %recent
 -------------------------------------
-Random -- If you do not like this, [Edit Menu] to erase it.
-%random
--------------------------------------
 
 Format of schedule and todo (Please replace {} with []):
 {2002-10-21}@  schedule -- (shown in schedule part)

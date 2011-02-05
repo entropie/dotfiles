@@ -70,7 +70,7 @@ recreate the minimap to avoid problems with recentering."
   :group 'minimap)
 
 (defface minimap-active-region-background
-  '((((background dark)) (:background "#4517305D0000"))
+  '((((background dark)) (:background "#6394ec"))
     (t (:background "#C847D8FEFFFF")))
   "Face for the active region in the minimap.
 By default, this is only a different background color."

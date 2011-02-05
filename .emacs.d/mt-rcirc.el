@@ -113,7 +113,7 @@
 
 
 (setq rcirc-bright-nicks '("ChanServ" "NickServ" "fsbot" "lambdabot" "birny" "corundum" "rutlov" "Mathetes"))
-(setq rcirc-dim-nicks '("typochur" "replikant" "vax" "Ionic`" "Bine" "mo2000" "d1g" "Mias" "dominikh" "muetze"))
+(setq rcirc-dim-nicks '("typochur" "replikant" "vax" "Ionic`" "Bine" "mo2000" "d1g" "Mias" "muetze"))
 (setq rcirc-ignore-list '("ro0^"))
 
 (defadvice rcirc-format-response-string (after dim-entire-line)

@@ -32,6 +32,11 @@
      (font-lock-variable-name-face ((t (:foreground "#ADFF31"))))
      (font-lock-warning-face ((t (:foreground "#cd9b9b" :background "#8b2500"))))
 
+     (ruby-complexity-complexity-low ((t (:foreground "#7f7f7f"))))
+     (ruby-complexity-complexity-normal ((t (:foreground "#d4d4d4"))))
+     (ruby-complexity-complexity-high ((t (:foreground "#7f007f"))))
+     (show-paren-match-face ((t (:foreground "green" :background nil))))
+     (show-paren-mismatch-face ((t (:foreground "red" :background nil))))
      (js2-keyword-face ((t (:bold t :foreground "#c080d0"))))
      (js2-function-name-face ((t (:foreground "#cd950c"))))
      (js2-string-face ((t (:foreground "#ffcd8b" :background "#404040"))))
