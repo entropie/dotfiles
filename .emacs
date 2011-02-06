@@ -327,9 +327,11 @@
 
 (require 'textile-mode)
 (add-to-list 'auto-mode-alist '("\\.textile\\'" . textile-mode))
+(add-hook 'textile-mode-hook 'mt-textile-setup)
 
 (add-hook 'nxml-mode-hook 'mt-html-setup)
 (autoload 'nxml-mode "nxml/autostart.el" "nxml/autostart.el" t)
+
 (define-abbrev-table 'global-abbrev-table '(
                                             ("alpha" "α" nil 0)
                                             ("beta" "β" nil 0)
@@ -547,12 +549,12 @@
         interprogram-paste-function 'x-cut-buffer-or-selection-value))
 
   
-
+(server-start)
 (require 'cursor-chg)
 (change-cursor-mode 1)         ; On for overwrite/read-only/input mode
 (toggle-cursor-type-when-idle 5)        ; On when idle
 (setq curchg-default-cursor-type 'bar)
-(setq curchg-default-cursor-color "#FF8000")
+(setq curchg-default-cursor-color "green")
 (setq curchg-input-method-cursor-color "yellow")
 (require 'saveplace)
 (setq-default save-place t)
@@ -609,6 +611,7 @@
 (add-hook 'sass-mode-hook 'mt-sass-setup)
 (add-hook 'haml-mode-hook 'mt-haml-setup)
 
+(add-hook 'text-mode-hook 'mt-text-setup)
 
 (autoload 'unicode-helper-mode "unicode-helper-mode" nil t)
 

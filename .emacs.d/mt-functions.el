@@ -37,7 +37,6 @@
       ;; allow some user customization
       (run-hooks 'find-file-root-hook))))
 
-
 (defun mt-find-next-double-word ()
   "move to next doubled word, ignoring <...> tags and any
   whitespace (including new lines)."
@@ -232,6 +231,17 @@ instead."
     (,(kbd "C-c i") mt-quoted-insert-file)
     ))
 
+(defun mt-textile-setup ()
+  (abbrev-mode)
+  (auto-fill-mode 0)
+  (flyspell-mode 0)
+  (lambda (mapping) 
+    (apply #'define-key textile-mode-map mapping))
+  `(
+    (,(kbd "C-c C-c") mt-textile-buffer-to-file)
+    ))
+
+
 (defun mt-mail-mail-setup ()
   (turn-on-auto-fill)
   (set-fill-column 66)
@@ -304,31 +314,6 @@ set to that number."
      (,(kbd "<right>") forward-char)
      (,(kbd "<left>") backward-char)
      (,(kbd "C-x b") ido-switch-buffer))))
-
-(defun mt-rcirc-setup ()
-  "Setup a rcirc buffer."
-  (flyspell-mode 1)
-  (unicode-helper-mode 1)
-  (rcirc-track-minor-mode 1)
-  (size-indication-mode -1)
-  (line-number-mode -1)
-  (size-indication-mode -1)
-  (display-time-mode -1)
-  (abbrev-mode 1)
-  (bs-config-clear)
-  (setq bs-default-configuration "rcirc")
-  (set (make-local-variable 'scroll-conservatively) 8192)
-  (setq local-abbrev-table mt-rcirc-mode-abbrev-table)
-  (setq rcirc-fill-column 60)
-  (set (make-local-variable 'rcirc-fill-prefix) "           ")
-  (mapc
-   (lambda (mapping) 
-     (apply #'define-key rcirc-mode-map mapping))
-   `(
-     (,(kbd "M-q") rcirc-unfill)
-     (,(kbd "C-x x") mt-ruby-xmp-region)
-     )))
-
 
 (defun mt-dylan-setup ()
   "Setup a dylan buffer."
@@ -530,8 +515,7 @@ When called with a prefix argument, show the *trace-output* buffer."
     (recenter -12)
     (pop-to-buffer buffer)))
 
-(defun mt-show-scratch-buffer ()
-  "Show the *scratch* buffer."
+(defun mt-show-scratch-buffer ()  "Show the *scratch* buffer."
   (interactive)
   (let ((buffer (current-buffer)))
     (pop-to-buffer "*scratch*")
@@ -580,11 +564,18 @@ When called with a prefix argument, show the *trace-output* buffer."
 (defvar url-nonrelative-link "\\`\\([-a-zA-Z0-9+.]+:\\)"
   "A regular expression that will match an absolute URL.")
 
-(defun mt-textile-region-to-file (start end)
-  (interactive "r")
-  "Save current region in a temporarily file and return the filename as string"
-  (shell-command-on-region start end (concat "2textile.rb" " ")))
+(defun mt-textile-buffer-to-file ()
+  (interactive)
+  (save-buffer)
+  "Parse textile entire buffer to redcloth and create correspondending html file in the same
+directory."
+  (shell-command (concat "~/bin/txtile" " " 
+                         (buffer-file-name) 
+                         " > " (replace-regexp-in-string 
+                                "textile" "html"
+                                (car (last (split-string buffer-file-name "\\/"))) ))))
 
+(buffer-file-name)
 (defun mt-qp-decode (start end)
   (interactive "r")
   (let ((coding-system-for-read 'latin-1))
@@ -683,8 +674,7 @@ When called with a prefix argument, show the *trace-output* buffer."
       (insert-char (upcase char) 1 t)))
   (delete-char 1 nil)
   (backward-char))
-(global-set-key (kbd "M-#") 'chris2-toggle-case)
-
+(global-set-key (kbd "M-#") 'mt-toggle-case)
 
 ;;08.04.2003: Kai Großjohann
 ;;2008-03-17: Michael 'mictro' Trommer <mictro@gmail.com>, use prefix
@@ -746,7 +736,6 @@ two prefix arguments, write out the day and month name."
                  (t "%A, %d. %B %Y")))
         (system-time-locale "de_DE"))
     (insert (format-time-string format))))
-
 
 (defun mt-kill-to-beginning-of-line ()
   "Kill from the beginning of the line to point."

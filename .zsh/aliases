@@ -65,13 +65,12 @@ site_ruby=/usr/lib/ruby/site_ruby/1.8
 gems=/usr/lib/ruby/gems/1.8/gems
 S=~/Source
 backbite=~/Source/backbite
-blog=~/Data/blog
-mlinc=/home/tie/p2p/mldonkey/incoming
-pub=/home/ftp/pub/
-inc=~/Data/Inc
+#blog=~/Data/blog
+#mlinc=/home/tie/p2p/mldonkey/incoming
+#pub=/home/ftp/pub/
 alias rlame='for i in *.wav; lame --preset extreme "$i" "$i.mp3"'
 alias lowercase='for i in [A-Z][A-Z]*(.); do mv "$i" "${i:l}" ;done'
-alias acroread="LANG=de_DE acroread"
+#alias acroread="LANG=de_DE acroread"
 alias btop='ps -eo pcpu,pid -o comm= | sort -k1 -n -r | head -1'
 #alias ls='ls --color=auto'
 alias xm='sudo xm '

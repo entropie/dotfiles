@@ -6,7 +6,7 @@ DIRSTACKSIZE=50
 #export http_proxy="http://tie:8080"
 
 export BROWSER=btab
-export HOMEPAGE='ackro.ath.cx'
+export HOMEPAGE='wiki.komunism.us'
 
 export PATH="${PATH}:~/bin"
 export MPD_HOST='localhost'
@@ -86,7 +86,7 @@ bindkey "^?" backward-delete-char
 # bindkey -s '^im' "|$PAGER\n"
 # bindkey -s '^it' "|tidy -i|$PAGER\n"
 # bindkey -s '^ip' "xclip -o"
-bindkey "^X" paste-xclip
+#bindkey "^X" paste-xclip
 
 if [ "`whoami`" != "root" ]; then
     case `hostname` in

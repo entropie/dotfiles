@@ -5,14 +5,38 @@ require "rubygems"
 require "redcloth"
 require "pp"
 
+fn = nil
+
 contents =
   if filen = ARGV.first and File.exist?(file = File.expand_path(filen))
+    fn = File.basename(filen).split(".").first.capitalize rescue nil
     File.readlines(file).join
   else
+    fn = nil
     $stdin.read
   end
 
+HTML = <<EOF
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+                      "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  #{fn and File.exist?(File.join(File.dirname(fn), "screen.css")) and '<link rel="stylesheet" type="text/css" href="screen.css" />' or ''}
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>#{fn}</title>
+</head>
+
+<body>
+
+%%THIS%%
+
+</body></html>
+EOF
+
+
 rc = RedCloth.new(contents)
 rc.hard_breaks = false
-puts rc.to_html
+puts HTML.gsub!(/%%THIS%%/, rc.to_html)
+
 

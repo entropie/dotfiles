@@ -10,7 +10,7 @@ setopt extendedglob
 
 typeset -A abbreviations
 abbreviations=(
-  "Ia"    "| awk"
+  "Ia"    "| ack"
   "Iag"   "| agrep"
   "Ieg"   "| egrep"
   "Ig"    "| grep"
