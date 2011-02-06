@@ -294,6 +294,31 @@ set to that number."
 ;;(require 'w3m-e21)
 ;;(provide 'w3m-e23)
 
+(defun mt-rcirc-setup ()
+  "Setup a rcirc buffer."
+  (flyspell-mode 1)
+  (unicode-helper-mode 1)
+  (rcirc-track-minor-mode 1)
+  (size-indication-mode -1)
+  (line-number-mode -1)
+  (size-indication-mode -1)
+  (display-time-mode -1)
+  (abbrev-mode 1)
+  (bs-config-clear)
+  (setq bs-default-configuration "rcirc")
+  (set (make-local-variable 'scroll-conservatively) 8192)
+  (setq local-abbrev-table mt-rcirc-mode-abbrev-table)
+  (setq rcirc-fill-column 60)
+  (set (make-local-variable 'rcirc-fill-prefix) "           ")
+  (mapc
+   (lambda (mapping) 
+     (apply #'define-key rcirc-mode-map mapping))
+   `(
+     (,(kbd "M-q") rcirc-unfill)
+     (,(kbd "C-x x") mt-ruby-xmp-region)
+     )))
+
+
 
 (defun mt-w3m-setup ()
   "Setup a w3m buffer."
