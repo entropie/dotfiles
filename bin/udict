@@ -1,0 +1,91 @@
+#
+#
+# Author:  Michael 'entropie' Trommer <mictro@gmail.com>
+#
+
+require "rubygems"
+require "nokogiri"
+require "open-uri"
+require "cgi"
+require "pp"
+
+class UrbanDictionary
+
+  URL = 'http://www.urbandictionary.com/define.php?term=%s'
+
+  attr_reader :data, :result
+
+  class Definition < Struct.new(:word, :defi, :example)
+    def parse_line(line, prfxs = ' ', prefixs = 2)
+      (line + "\n").split("\n").map{|part| (prfxs*prefixs) + part }.join("\n")
+    end
+
+    def to_s()
+      examples = parse_line(example, ' ', 1).split("\n").map{|l| "  >#{l}"}.join("\n")
+      "%s:\n%s\n%s" % [word, parse_line(defi), examples]
+    end
+  end
+
+
+  def initialize(term)
+    @data = Nokogiri::HTML(open(URL % CGI.escape(term)))
+    @result = []
+    parse
+  end
+
+  def add_definition(word, defi, example)
+    defi = defi.gsub(/\r/, "\n")
+    example = example.gsub(/\r/, "\n")
+    @result << Definition.new(word.strip, defi.strip, example.strip)
+  end
+
+  def parse
+    entries = @data.at_css("table#entries")
+
+    word = nil
+    entries.css("tr").each_with_index do |row, index|
+      begin
+        word_tag = row.at_css(".word")
+        if word_tag
+          word = word_tag.text
+        elsif conts = row.at_css(".text")
+          defi = conts.at_css(".definition").text
+          example = conts.at_css(".example").text
+          add_definition(word, defi, example)
+        end
+      rescue
+      end
+    end
+  end
+
+  def to_s
+  end
+
+end
+
+def usage
+  puts "Usage: #{$0} <term> [count]"
+  exit 1
+end
+
+usage unless term = ARGV.shift
+
+count = (org= ARGV.shift).to_i || -1
+if org and count.to_s != org
+  usage
+end
+
+ud = UrbanDictionary.new(term)
+ud.result.each_with_index do |r, index|
+  puts r
+  exit 0 if count >= 0 and count == index+1
+end
+
+=begin
+Local Variables:
+  mode:ruby
+  fill-column:70
+  indent-tabs-mode:nil
+  ruby-indent-level:2
+End:
+=end
