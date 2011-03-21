@@ -264,6 +264,8 @@
 (global-set-key (kbd "C-x U") 'mt-toggle-utf8-latin1)
 
 (require 'hideshow)
+(setq hs-isearch-open 'x)
+
 (define-key hs-minor-mode-map (kbd "C-c C-e") 'hs-show-block)
 (define-key hs-minor-mode-map (kbd "C-c C-c") 'hs-toggle-hiding)
 (define-key hs-minor-mode-map (kbd "C-c C-x") 'hs-hide-block)
@@ -426,7 +428,7 @@
 
 (add-to-list 'auto-mode-alist '("\\.css$" . css-mode))
 (autoload 'css-mode "css-mode" "CSS mode" t)
-(setq cssm-indent-function #'cssm-c-style-indenter)
+(setq cssm-indent-function 'cssm-c-style-indenter)
 
 (autoload 'wdired "wdired" "wdired" t)
 
@@ -585,7 +587,7 @@
 (setq js2-allow-keywords-as-property-names nil)
 (setq js2-auto-indent-p nil)
 (setq js2-basic-offset 0)
-(setq js2-bounce-indent-p t)
+(setq js2-bounce-indent-p nil)
 (setq js2-cleanup-whitespace t)
 (setq js2-enter-indents-newline nil)
 (setq js2-global-externs (quote ("algjs" "$" "goog" "YAHOO" "jQuery")))

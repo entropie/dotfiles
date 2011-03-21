@@ -296,7 +296,7 @@ set to that number."
 
 (defun mt-rcirc-setup ()
   "Setup a rcirc buffer."
-  (flyspell-mode 1)
+  (flyspell-mode 0)
   (unicode-helper-mode 1)
   (rcirc-track-minor-mode 1)
   (size-indication-mode -1)

@@ -79,11 +79,15 @@
      (rcirc-bright-nick ((t (:foreground "#cdbe70" :underline nil))))
      (rcirc-dim-nick ((t (:foreground "#808080"))))
      (rcirc-nick-in-message ((t (:foreground "#ffc125"))))
-     (rcirc-my-nick ((t (:foreground "#ffc125" :underline "#ffc125"))))
+     (rcirc-my-nick ((t (:foreground "#fff" :underline nil))))
      (rcirc-nick-in-message-full-line ((t (:foreground "#ffc125"))))
      (dired-warning ((t (:foreground "Orange"))))
      (dired-directory ((t (:foreground "LightBlue"))))
      (dired-filename ((t (:foreground "PaleGreen"))))
+     (textile-link-face ((t (:foreground "PaleGreen" :underline t))))
+     (textile-ul-bullet-face ((t (:foreground "purple" ))))
+
+
 
      (howm-menu-key-face ((t (:foreground "orange"))))
      (howm-menu-list-face ((t (:foreground "white"))))
